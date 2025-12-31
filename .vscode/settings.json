@@ -1,1 +1,9 @@
-
+{
+  "php.validate.executablePath": "C:/php/php.exe",  // Change this to your PHP path
+  "php.suggest.basic": false,  // Disable basic PHP function suggestions (like undefined ones)
+  "intelephense.diagnostics.undefinedFunctions": false,  // Disable diagnostics for undefined functions
+  "intelephense.diagnostics.enabled": false,  // Disable diagnostics entirely (optional)
+  "intelephense.files.maxSize": 5000000,  // Optional: Increase max file size limit for Intelephense
+  "php.validate.enable": false,  // Disable PHP validation for undefined functions
+  "intelephense.diagnostics.undefinedConstants": false  // Disable undefined constants diagnostics
+}
