@@ -5,7 +5,7 @@ use PHPMailer\PHPMailer\Exception;
 
 require __DIR__ . '/../vendor/autoload.php';
 
-function sendPermitExpiryAlert($employeesExpiringSoon) {
+function sendPassportExpiryAlert($employeesExpiringSoon) {
     if (empty($employeesExpiringSoon)) {
         return false;
     }
@@ -32,7 +32,7 @@ function sendPermitExpiryAlert($employeesExpiringSoon) {
     $mail->Password = 'Abc12345678';
 
     // Recipients
-    $mail->setFrom('bizalert.Noreply@my.alps.com', 'FCW Work Permit Expiry Alert');
+    $mail->setFrom('bizalert.Noreply@my.alps.com', 'FCW Passport Expiry Alert');
     $mail->addAddress('fahim.mfza@outlook.com', '');
     // Add more recipients if needed
     // $mail->addAddress('hr@my.alps.com', 'HR Manager');
@@ -42,7 +42,7 @@ function sendPermitExpiryAlert($employeesExpiringSoon) {
 
     // Email content
     $mail->isHTML(true);
-    $mail->Subject = 'Work Permit Expiry Alert - ' . count($employeesExpiringSoon) . ' Employee(s) Expiring Soon';
+    $mail->Subject = 'Passport Expiry Alert - ' . count($employeesExpiringSoon) . ' Employee(s) Expiring Soon';
 
     $emailBody = '
     <!DOCTYPE html>
@@ -59,20 +59,18 @@ function sendPermitExpiryAlert($employeesExpiringSoon) {
             .footer { margin-top: 20px; padding: 15px; background-color: #343a40; color: white; text-align: center; font-size: 12px; }
             .warning { color: #ffc107; font-weight: bold; }
             .expired { color: #dc3545; font-weight: bold; }
-            .incomplete { color: #dc3545; font-weight: bold; }
-            .complete { color: #28a745; font-weight: bold; }
             .alert-icon { font-size: 48px; margin-bottom: 10px; }
         </style>
     </head>
     <body>
         <div class="header">
-            <h2>Work Permit Expiry Alert</h2>
+            <h2>Passport Expiry Alert</h2>
         </div>
         <div>
-            <p>Page link: <a href="' . $pageLink . '" target="_blank">http://10.23.6.223:106</a></p>
+            <p>Page link: <a href=" '. $pageLink . ' " target="_blank">http://10.23.6.223:106</a></p>
         </div>
         <div class="content">
-            <p>The following employee(s) have work permit(s) expiring within 90 days or already expired:</p>
+            <p>The following employee(s) have passport(s) expiring within 12 months or already expired:</p>
             
             <table>
                 <thead>
@@ -81,46 +79,30 @@ function sendPermitExpiryAlert($employeesExpiringSoon) {
                         <th>Employee Name</th>
                         <th>Department</th>
                         <th>Nationality</th>
-                        <th>Work Permit Number</th>
+                        <th>Passport Number</th>
                         <th>Expiry Date</th>
-                        <th>Medical Status</th>
-                        <th>Insurance Status</th>
-                        <th>Permit Status</th>
+                        <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>';
     
     foreach ($employeesExpiringSoon as $employee) {
-        $statusClass = $employee['permit_status'] === 'Expired' ? 'expired' : 'warning';
-        $medicalClass = $employee['medical_status'] === 'Complete' ? 'complete' : 'incomplete';
-        $insuranceClass = $employee['insurance_status'] === 'Valid' ? 'complete' : 'incomplete';
-        
+        $statusClass = $employee['status'] === 'Expired' ? 'expired' : 'warning';
         $emailBody .= '
                     <tr>
                         <td>' . htmlspecialchars($employee['employee_no']) . '</td>
                         <td>' . htmlspecialchars($employee['name']) . '</td>
                         <td>' . htmlspecialchars($employee['department']) . '</td>
                         <td>' . htmlspecialchars($employee['nationality']) . '</td>
-                        <td>' . htmlspecialchars($employee['permit_no']) . '</td>
+                        <td>' . htmlspecialchars($employee['passport_no']) . '</td>
                         <td>' . htmlspecialchars($employee['expiry_date']) . '</td>
-                        <td class="' . $medicalClass . '">' . htmlspecialchars($employee['medical_status']) . '</td>
-                        <td class="' . $insuranceClass . '">' . htmlspecialchars($employee['insurance_status']) . '</td>
-                        <td class="' . $statusClass . '">' . htmlspecialchars($employee['permit_status']) . '</td>
+                        <td class="' . $statusClass . '">' . htmlspecialchars($employee['status']) . '</td>
                     </tr>';
     }
     
     $emailBody .= '
                 </tbody>
             </table>
-            
-            <div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border-left: 4px solid #ffc107;">
-                <strong>Action Required:</strong>
-                <ul>
-                    <li>Employees with <strong style="color: #dc3545;">Incomplete Medical</strong> must complete medical checkup immediately</li>
-                    <li>Employees with <strong style="color: #dc3545;">Invalid Insurance</strong> must renew SPIKPA insurance</li>
-                    <li>Only employees with <strong style="color: #28a745;">Complete Medical</strong> and <strong style="color: #28a745;">Valid Insurance</strong> can proceed with permit renewal</li>
-                </ul>
-            </div>
         </div>
         <div class="footer">
             <p>This is an automated message from FCW Masterlist System.</p>
@@ -130,13 +112,26 @@ function sendPermitExpiryAlert($employeesExpiringSoon) {
     </html>';
 
     $mail->Body = $emailBody;
+    
+    // Plain text version
+    $altBody = "Passport Expiry Alert\n\n";
+    $altBody .= "The following employee(s) have passport(s) expiring within 12 months or already expired:\n\n";
+    foreach ($employeesExpiringSoon as $employee) {
+        $altBody .= "Employee No: {$employee['employee_no']}\n";
+        $altBody .= "Name: {$employee['name']}\n";
+        $altBody .= "Department: {$employee['department']}\n";
+        $altBody .= "Passport No: {$employee['passport_no']}\n";
+        $altBody .= "Expiry Date: {$employee['expiry_date']}\n";
+        $altBody .= "Status: {$employee['status']}\n\n";
+    }
+    $mail->AltBody = $altBody;
 
     // Send email
     if ($mail->send()) {
-        error_log("Work permit expiry alert email sent successfully");
+        error_log("Passport expiry alert email sent successfully");
         return true;
     } else {
-        error_log("Failed to send work permit alert email: " . $mail->ErrorInfo);
+        error_log("Failed to send passport alert email: " . $mail->ErrorInfo);
         return false;
     }
 }
