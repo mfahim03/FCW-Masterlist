@@ -1,15 +1,8 @@
 Foreign Contract Worker Masterlist (Manual Guide)
 
-Website link : http://10.23.6.223:106
-
 1. Login
 	(Admin)
-	- username : aen
-	- password : aen1234
-
 	(User)
-	- username : user
-	- password : user1234
 
 2. Dashboard Page
 	- main dashboard (display count for each category)
@@ -63,4 +56,5 @@ Website link : http://10.23.6.223:106
 	- Nationality
 	- Department
 	- Contract Type
+
 	- Medical Status
