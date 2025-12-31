@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<title>Word Search</title>
+<link rel="icon" type="image/png" href="img/adEN.png">
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Creepster&family=Nosifer&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Creepster&family=Nosifer&display=swap');
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: #000000;
+    padding: 20px;
+}
+
+h1 {
+    margin: 20px 0;
+    gap: 10px;
+    font-family: 'Creepster', cursive;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+#levelSelect {
+    margin-bottom: 20px;
+    background: white;
+    width: 80%;
+    padding: 15px 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+#levelSelect h3 {
+    margin: 0 0 10px 0;
+    font-family: 'Creepster', cursive;
+    text-align: center;
+}
+
+.level-btn {
+    padding: 10px 20px;
+    margin: 5px;
+    background: #696f70;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    color: white;
+    transition: all 0.2s;
+}
+
+.level-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    background: #0090cc;
+}
+
+.level-btn.active {
+    background: #28a745;
+}
+
+#game {
+    display: grid;
+    gap: 10px;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgb(100, 100, 100);
+    border: 1px solid #ccc;
+    cursor: pointer;
+    user-select: none;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.cell:hover {
+    transform: scale(1.1);
+}
+
+.cell.selected {
+    background: yellow;
+}
+
+.cell.found {
+    background: lightgreen !important;
+}
+
+#words {
+    margin-top: 20px;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    width: 80%;
+}
+
+#words h3 {
+    margin-top: 0;
+    font-family: 'Creepster', cursive;
+    text-align: center;
+}
+
+.word-item {
+    display: inline-block;
+    margin: 5px 10px;
+    padding: 5px 10px;
+    background: #f0f0f0;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.word-item.found {
+    text-decoration: line-through;
+    background: lightgreen;
+    color: #333;
+}
+
+#controls {
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 10px 20px;
+    margin: 5px;
+    background: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+#message {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background: white;
+    border-radius: 5px;
+    font-weight: bold;
+    min-height: 20px;
+}
+
+#stats {
+    margin-top: 10px;
+    background: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.game-complete {
+    background: #28a745 !important;
+    color: white;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+</style>
+</head>
+<body>
+
+<h1>Searching for Word</h1>
+
+<div id="levelSelect">
+    <h3>Select Difficulty Level:</h3>
+    <button class="level-btn" onclick="setLevel('easy')">EaSy (10 words)</button>
+    <button class="level-btn" onclick="setLevel('medium')">mEdIuM (15 words)</button>
+    <button class="level-btn" onclick="setLevel('hard')">HaRd (20 words)</button>
+    <button class="level-btn" onclick="setLevel('berryhard')">BeRrY hArD (25 words)</button>
+    <button class="level-btn" onclick="setLevel('superhard')">sUpEr HaRd (30 words)</button>
+    <button class="level-btn" onclick="setLevel('legendary')">LeGeNdArY (50 words)</button>
+    <button class="level-btn" onclick="setLevel('media')">MeDiA (20 words)</button>
+    <button class="level-btn" onclick="setLevel('country')">cOuNtRy (60 words)</button>
+    <button class="level-btn" onclick="setLevel('games')">GaMeS (18 words)</button>
+</div>
+
+<div id="game"></div>
+<div id="controls">
+    <button class="btn" onclick="newGame()">New Game</button>
+</div>
+<div id="message"></div>
+<div id="stats"></div>
+<div id="words">
+    <h3>Searching for :</h3>
+    <div id="wordList"></div>
+</div>
+
+<script>
+// Word bank categorized by difficulty
+const wordBank = {
+    easy: ["CAT", "DOG", "SUN", "MAX", "TRY", "GET", "GOT", "POT", "RED", "TEA",
+           "WAS", "RAG", "DID", "MET", "MAT","LET","BET","FIT","LAG","THE","LOG"],
+
+    medium: ["APPLE", "OCEAN", "MUSIC", "SMILE", "DANCE", "NIGHT", "LIGHT", "PIZZA", 
+             "HAPPY", "PLANT", "WATER", "EARTH", "CLOUD", "STONE", "RADIO", "PHONE","COOL","UNSTEADY","LICENSE","DRIVERS","FLUORESCENT"],
+
+    hard: ["BUTTERFLY", "MOUNTAIN", "RAINBOW", "COMPUTER", "ELEPHANT", "CHOCOLATE", "ADVENTURE", "SUNSHINE", "BIRTHDAY", "FOOTBALL",
+           "UNIVERSE", "KEYBOARD", "DINOSAUR", "UMBRELLA", "SANDWICH","UNLEARN","WONTWORK","RISK","DAWG","GALAXY"],
+
+    berryhard: ["POETRY", "FANTASY", "FAUX", "TEENAGE", "FORSAKEN", "LONELY", "EMPTY", "HOUSE", "BIRTHDAY", "DREAM", "UNIVERSITY", "THROUGHOUT", "DINOSAUR", "UMBRELLA",
+                "RECIPIENT","UNLEARN","WONTWORK","RISK","PORTABLE","LAUGHING","SIDECROSS",
+                "BEGINNING","DRIVERS","LICENSE","TRAITOR"],
+
+    superhard: ["BUTTERFLY", "MOUNTAIN", "RAINBOW", "COMPUTER", "ELEPHANT", "CHOCOLATE", "ADVENTURE", "CONGRATULATION",
+                "OPERATION", "AFGHANATION", "CREATING", "KEYBOARD", "MASTERPIECE", "UMBRELLA",
+                "SANDWICH","UNLEARN","SNOWBOARDING","HONESTLY","PORTABLE","CLICKABLE","ENJOYABLE","MALIBU","STUCK",
+                "TRUTHFULLY","FRIENDSHIP","SITUATIONSHIP","MISTAKE","UNSTEADY","CAMDEN","RUNAWAY"],
+
+    legendary: ["OVERTHINKING", "EVERYWHERE", "HOMESCHOOLED", "EVERYTHING", "FAVORITE", "BIOLUMINESCENT", "UNDERSTANDABLE", "ADOLESCENT", "ESTABLISHMENT", "INTROVERTED", 
+                "TRANSPORTATION", "SKATEBOARDING", "THEORETICALLY", "REALIZATION","COMPATIBILITY","ENLIGHTENING",
+                "OVERGENERALIZATION","CONCENTRATION","SUCCESSFULLY","MISCONCEPTION","WHOLEHEARTEDLY","GEOGRAPHICALLY","FRIENDSHIP","SITUATIONSHIP",
+                "FRIENDZONE","FLUORESCENT","EMBARRASSING","SPECIFICALLY","ITOLDYOUTHING","SWALLOWELLO","OBVIOUSLY", "LOCALIZATION",
+                "RELATIONSHIP","INTERESTING","FRAGMENTATION","SLEEPLESS","DIAGNOSIS","RECOMMENDATION","COMPANIONSHIP",
+                "MEMBERSHIP","EXPECTATION","INTENTIONAL","ALPHABETICALLY","EXCEPTIONAL","CONGRATULATION","INTROSPECTIVE","AGGRESSIVENESS",
+                "TRANSFORMATION","UNDERPRIVILEGED","HEARTBREAKANNIVERSARY"],
+
+    media: ["INSTAGRAM","TELEGRAM","WHATSAPP","FACEBOOK","TIKTOK","SNAPCHAT","THREADS","TWITCH","TWITTER","BEREAL",
+            "DISCORD","LINKEDIN","YOUTUBE","SPOTIFY"],
+    
+    country : [
+            "AFGHANATION", "ALBANIA", "ALGERIA", "ANDORRA", "ANGOLA", "ARGENTINA", "ARMENIA",
+            "AUSTRALIA", "AUSTRIA", "AZERBAIJAN", "BAHAMAS", "BAHRAIN", "BANGLADESH", "BARBADOS", "BELARUS",
+            "BELGIUM", "BELIZE", "BENIN", "BHUTAN", "BOLIVIA", "BOSNIA", "BRAZIL",
+            "BRUNEI", "BULGARIA", "BURUNDI", "CAMBODIA", "CAMEROON", "CANADA",
+            "CHAD", "CHILE", "CHINA", "COLOMBIA", "COMOROS", "CONGO", "COSTARICA",
+            "COTEDIVOIRE", "CROATIA", "CUBA", "CYPRUS", "CZECHREPUBLIC",
+            "DENMARK", "DJIBOUTI", "DOMINICA", "ECUADOR", "EGYPT",
+            "ESTONIA", "ETHIOPIA", "FIJI", "FINLAND", "FRANCE",
+            "GABON", "GAMBIA", "GEORGIA", "GERMANY", "GHANA", "GREECE", "GRANADA", "GUATEMALA", "GUINEA",
+            "GUINEABISSAU", "GUYANA", "HAITI", "HONDURAS", "HUNGARY", "ICELAND", "INDIA", "INDONESIA",
+            "IRAN", "IRAQ", "IRELAND", "ITALY", "JAMAICA", "JAPAN", "JORDAN", "KAZAKHSTAN", "KENYA",
+            "KIRIBATI", "KUWAIT", "KYRGYZSTAN", "LAOS", "LATVIA", "LEBANON", "LESOTHO",
+            "LIBERIA", "LIBYA", "LIECHTENSTEIN", "LITHUANIA", "LUXEMBOURG", "MADAGASCAR", "MALAWI", "MALAYSIA",
+            "MALDIVES", "MALI", "MALTA", "MAURITANIA", "MAURITIUS", "MEXICO",
+            "MONACO", "MONGOLIA", "MONTENEGRO", "MOROCCO", "MOZAMBIQUE", "MYANMAR",  
+            "NEPAL", "NETHERLANDS", "NEWZEALAND", "NICARAGUA", "NIGER", "NIGERIA", "NORTHMACEDONIA",
+            "NORWAY", "OMAN", "PAKISTAN", "PALAU", "PANAMA", "PAPUANEWGUINEA", "PARAGUAY", "PERU",
+            "PHILIPPINES", "POLAND", "PORTUGAL", "QATAR", "REPUBLICOFCONGO", "ROMANIA",
+            "RWANDA", "SAMOA", "SAUDIARABIA", "SENEGAL", "SERBIA", 
+            "SINGAPORE", "SLOVAKIA", "SLOVENIA", "SOLOMONISLANDS", "SOMALIA", "SOUTHAFRICA", "SOUTHKOREA",
+            "SPAIN", "SRI LANKA", "SUDAN", "SURINAME", "SWEDEN", "SWITZERLAND", "SYRIA",
+            "TAJIKISTAN", "TANZANIA", "THAILAND", "TIMORLESTE", "TONGA",
+            "TUNISIA", "TURKEY", "TURKMENISTAN", "TUVALU", "UGANDA", "UKRAINE", "UNITEDARABEMIRATES", "UNITEDKINGDOM",
+            "UNITEDSTATES", "URUGUAY", "UZBEKISTAN", "VENEZUELA", "VIETNAM", "ZAMBIA", "ZIMBABWE",
+            "PALESTINE", "ANTARCTICA"
+            ],
+
+    games: ["VALORANT","BATTLEFIELD","APEX","COUNTERSTRIKE","LEAGUEOFLEGENDS","DOTA","MOBILELEGENDS","PUBG",
+            "OVERWATCH","MINECRAFT","ARCRAIDERS","SILKSONG","DYINGLIGHT","PHASMOPHOBIA","DEADLOCK","DISPATCH","MORTALKOMBAT"]
+};
+
+let currentLevel = 'easy';
+let size = 40;
+let words = [];
+let foundWords = [];
+let grid = [];
+let selection = [];
+let isMouseDown = false;
+let startTime = null;
+let endTime = null; // Track when game completed
+let timerInterval = null; // Store interval reference
+let startCell = null;
+
+const gameDiv = document.getElementById('game');
+const wordListDiv = document.getElementById('wordList');
+const messageDiv = document.getElementById('message');
+const statsDiv = document.getElementById('stats');
+
+function setLevel(level){
+    currentLevel = level;
+    
+    // Update button states
+    document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Set grid size and word count based on level
+    if(level === 'easy'){
+        size = 10;
+        words = getRandomWords(wordBank.easy, 10);
+    } else if(level === 'medium'){
+        size = 12;
+        words = getRandomWords(wordBank.medium, 15);
+    } else if(level === 'hard'){
+        size = 15;
+        words = getRandomWords(wordBank.hard, 20);
+    }
+    else if(level === 'berryhard'){
+        size = 20;
+        words = getRandomWords(wordBank.berryhard, 25);
+    }
+    else if(level === 'superhard'){
+        size = 25;
+        words = getRandomWords(wordBank.superhard, 30);
+    }
+    else if(level === 'legendary'){
+        size = 40;
+        words = getRandomWords(wordBank.legendary, 50);
+    }
+    else if(level === 'media'){
+        size = 20;
+        words = getRandomWords(wordBank.media, 20);
+    }
+    else if(level === 'country'){
+        size = 40;
+        words = getRandomWords(wordBank.country, 200);
+    }
+    else if(level === 'games'){
+        size = 18;
+        words = getRandomWords(wordBank.games, 18);
+    }
+    initGame();
+}
+
+function getRandomWords(wordArray, count){
+    const shuffled = [...wordArray].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+}
+
+function createEmptyGrid(size){
+    const grid = [];
+    for(let i=0;i<size;i++){
+        grid.push(new Array(size).fill(''));
+    }
+    return grid;
+}
+
+function placeWords(grid, words){
+    words.forEach(word=>{
+        let placed = false;
+        let attempts = 0;
+        while(!placed && attempts < 200){
+            attempts++;
+            const dir = Math.floor(Math.random() * 4);
+            const row = Math.floor(Math.random()*size);
+            const col = Math.floor(Math.random()*size);
+            
+            if(dir === 0 && col+word.length <= size){
+                let canPlace = true;
+                for(let i=0;i<word.length;i++){
+                    if(grid[row][col+i] && grid[row][col+i]!==word[i]) canPlace=false;
+                }
+                if(canPlace){
+                    for(let i=0;i<word.length;i++) grid[row][col+i]=word[i];
+                    placed=true;
+                }
+            } 
+            else if(dir === 1 && row+word.length <= size){
+                let canPlace=true;
+                for(let i=0;i<word.length;i++){
+                    if(grid[row+i][col] && grid[row+i][col]!==word[i]) canPlace=false;
+                }
+                if(canPlace){
+                    for(let i=0;i<word.length;i++) grid[row+i][col]=word[i];
+                    placed=true;
+                }
+            }
+            else if(dir === 2 && row+word.length <= size && col+word.length <= size){
+                let canPlace=true;
+                for(let i=0;i<word.length;i++){
+                    if(grid[row+i][col+i] && grid[row+i][col+i]!==word[i]) canPlace=false;
+                }
+                if(canPlace){
+                    for(let i=0;i<word.length;i++) grid[row+i][col+i]=word[i];
+                    placed=true;
+                }
+            }
+            else if(dir === 3 && row+word.length <= size && col-word.length+1 >= 0){
+                let canPlace=true;
+                for(let i=0;i<word.length;i++){
+                    if(grid[row+i][col-i] && grid[row+i][col-i]!==word[i]) canPlace=false;
+                }
+                if(canPlace){
+                    for(let i=0;i<word.length;i++) grid[row+i][col-i]=word[i];
+                    placed=true;
+                }
+            }
+        }
+    });
+}
+
+function fillEmpty(grid){
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for(let r=0;r<size;r++){
+        for(let c=0;c<size;c++){
+            if(!grid[r][c]) grid[r][c] = letters[Math.floor(Math.random()*letters.length)];
+        }
+    }
+}
+
+function initGame(){
+    grid = createEmptyGrid(size);
+    placeWords(grid, words);
+    fillEmpty(grid);
+    foundWords = [];
+    selection = [];
+    startTime = Date.now();
+    endTime = null; // Reset end time
+    
+    // Clear any existing timer interval
+    if(timerInterval) {
+        clearInterval(timerInterval);
+    }
+    
+    // Start new timer interval
+    timerInterval = setInterval(updateStats, 1000);
+    
+    renderGrid();
+    renderWords();
+    updateStats();
+    messageDiv.textContent = '';
+    statsDiv.classList.remove('game-complete');
+}
+
+function renderGrid(){
+    const cellSize = currentLevel === 'hard' ? 35 : (currentLevel === 'medium' ? 40 : 45);
+    gameDiv.style.gridTemplateColumns = `repeat(${size}, ${cellSize}px)`;
+    gameDiv.style.gridTemplateRows = `repeat(${size}, ${cellSize}px)`;
+    
+    gameDiv.innerHTML='';
+    for(let r=0;r<size;r++){
+        for(let c=0;c<size;c++){
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.style.width = cellSize + 'px';
+            cell.style.height = cellSize + 'px';
+            cell.style.fontSize = (cellSize * 0.45) + 'px';
+            cell.dataset.row=r;
+            cell.dataset.col=c;
+            cell.textContent=grid[r][c];
+            
+            cell.addEventListener('mousedown',(e)=>{
+                e.preventDefault();
+                isMouseDown = true;
+                startCell = {row: r, col: c};
+                selectCell(r,c,cell);
+            });
+            
+            cell.addEventListener('mouseenter',()=>{
+                if(isMouseDown && startCell){
+                    selectLine(startCell.row, startCell.col, r, c);
+                }
+            });
+            
+            gameDiv.appendChild(cell);
+        }
+    }
+}
+
+document.addEventListener('mouseup', ()=>{
+    isMouseDown = false;
+    startCell = null;
+    checkSelection();
+});
+
+function renderWords(){
+    wordListDiv.innerHTML='';
+    words.forEach(word=>{
+        const span = document.createElement('span');
+        span.classList.add('word-item');
+        span.textContent=word;
+        if(foundWords.includes(word)) span.classList.add('found');
+        wordListDiv.appendChild(span);
+    });
+}
+
+function updateStats(){
+    // Use endTime if game is complete, otherwise use current time
+    const timeToUse = endTime || Date.now();
+    const elapsed = startTime ? Math.floor((timeToUse - startTime) / 1000) : 0;
+    
+    const statusText = endTime ? 'COMPLETED!' : 'In Progress';
+    statsDiv.textContent = `Level: ${currentLevel.toUpperCase()} | Found: ${foundWords.length}/${words.length} | Time: ${elapsed}s | Status: ${statusText}`;
+}
+
+function selectCell(r,c,cell){
+    // Don't add if already in selection
+    const alreadySelected = selection.some(([sr, sc]) => sr === r && sc === c);
+    if(!alreadySelected) {
+        cell.classList.add('selected');
+        selection.push([r,c]);
+    }
+}
+
+function selectLine(r1, c1, r2, c2) {
+    const rowDiff = r2 - r1;
+    const colDiff = c2 - c1;
+    
+    if (rowDiff !== 0 && colDiff !== 0 && Math.abs(rowDiff) !== Math.abs(colDiff)) {
+        return;
+    }
+    
+    const rowStep = rowDiff === 0 ? 0 : rowDiff / Math.abs(rowDiff);
+    const colStep = colDiff === 0 ? 0 : colDiff / Math.abs(colDiff);
+    const steps = Math.max(Math.abs(rowDiff), Math.abs(colDiff));
+    
+    // Clear previous selection
+    document.querySelectorAll('.cell.selected:not(.found)').forEach(cell => {
+        cell.classList.remove('selected');
+    });
+    selection = [];
+    
+    for (let i = 0; i <= steps; i++) {
+        const r = r1 + i * rowStep;
+        const c = c1 + i * colStep;
+        
+        if (r >= 0 && r < size && c >= 0 && c < size) {
+            const cell = document.querySelector(`.cell[data-row='${r}'][data-col='${c}']`);
+            cell.classList.add('selected');
+            selection.push([r, c]);
+        }
+    }
+}
+
+function checkSelection(){
+    if(selection.length === 0) return;
+    
+    // Remove duplicates from selection (caused by mouseenter events)
+    const uniqueSelection = [];
+    const seen = new Set();
+    for(let [r, c] of selection) {
+        const key = `${r},${c}`;
+        if(!seen.has(key)) {
+            seen.add(key);
+            uniqueSelection.push([r, c]);
+        }
+    }
+    selection = uniqueSelection;
+    
+    if(selection.length > 1){
+        const isValid = isValidDirection(selection);
+        if(!isValid){
+            messageDiv.textContent = '✗ Selection must be in a straight line (horizontal, vertical, or diagonal)';
+            messageDiv.style.color = 'red';
+            clearSelection();
+            return;
+        }
+    }
+    
+    const selectedWord = selection.map(([r,c])=>grid[r][c]).join('');
+    const reversed = selectedWord.split('').reverse().join('');
+    
+    let foundMatch = false;
+    words.forEach(word=>{
+        if(!foundWords.includes(word) && (selectedWord===word || reversed===word)){
+            foundWords.push(word);
+            selection.forEach(([r,c])=>{
+                const cell = document.querySelector(`.cell[data-row='${r}'][data-col='${c}']`);
+                cell.classList.add('found');
+                cell.classList.remove('selected');
+            });
+            foundMatch = true;
+            messageDiv.textContent = `✓ Found: ${word}!`;
+            messageDiv.style.color = 'green';
+            renderWords();
+            updateStats();
+            
+            // CHECK IF GAME IS COMPLETE
+            if(foundWords.length === words.length){
+                endTime = Date.now(); // STOP THE TIMER
+                const elapsed = Math.floor((endTime - startTime) / 1000);
+                
+                // Clear the timer interval
+                if(timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+                
+                // Update stats one final time
+                updateStats();
+                
+                // Add visual feedback
+                statsDiv.classList.add('game-complete');
+                
+                setTimeout(()=>{
+                    alert(`Congratulations! You found all words in ${elapsed} seconds!`);
+                }, 300);
+            }
+        }
+    });
+    
+    if(!foundMatch && selection.length > 0){
+        messageDiv.textContent = `✗ "${selectedWord}" is not a word. Try again!`;
+        messageDiv.style.color = 'red';
+    }
+    
+    clearSelection();
+}
+
+function clearSelection(){
+    // Clear selected class from cells that aren't found
+    document.querySelectorAll('.cell.selected:not(.found)').forEach(cell => {
+        cell.classList.remove('selected');
+    });
+    selection = [];
+}
+
+function isValidDirection(selection){
+    if(selection.length < 2) return true;
+    
+    const [r1, c1] = selection[0];
+    const [r2, c2] = selection[1];
+    
+    const rowDiff = r2 - r1;
+    const colDiff = c2 - c1;
+    
+    for(let i=1; i<selection.length; i++){
+        const [prevR, prevC] = selection[i-1];
+        const [currR, currC] = selection[i];
+        
+        const currRowDiff = currR - prevR;
+        const currColDiff = currC - prevC;
+        
+        if(currRowDiff !== rowDiff || currColDiff !== colDiff){
+            return false;
+        }
+    }
+    
+    const absRowDiff = Math.abs(rowDiff);
+    const absColDiff = Math.abs(colDiff);
+    
+    return (absRowDiff === 0 && absColDiff === 1) ||
+           (absRowDiff === 1 && absColDiff === 0) ||
+           (absRowDiff === 1 && absColDiff === 1);
+}
+
+function newGame(){
+    if(confirm('Start a new game with the same level?')){
+        if(currentLevel === 'easy'){
+            words = getRandomWords(wordBank.easy, 10);
+        } else if(currentLevel === 'medium'){
+            words = getRandomWords(wordBank.medium, 12);
+        } else if(currentLevel === 'hard'){
+            words = getRandomWords(wordBank.hard, 15);
+        }
+        else if(currentLevel === 'berryhard'){
+            words = getRandomWords(wordBank.berryhard, 20);
+        }
+        else if(currentLevel === 'superhard'){
+            words = getRandomWords(wordBank.superhard, 25);
+        }
+        else if(currentLevel === 'legendary'){
+            words = getRandomWords(wordBank.legendary, 50);
+        }
+        else if(currentLevel === 'media'){
+            words = getRandomWords(wordBank.media, 20);
+        }
+        else if(currentLevel === 'country'){
+            words = getRandomWords(wordBank.country, 60);
+        }
+        else if(currentLevel === 'games'){
+            words = getRandomWords(wordBank.games, 18);
+        }
+        initGame();
+    }
+}
+
+// Initialize with berryhard level
+setLevel('berryhard');
+</script>
+
+</body>
+</html>
