@@ -1,0 +1,134 @@
+.edit-btn {
+    background-color: #5a189a;
+    color: white;
+    border: none;
+    padding: 10px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    
+    transition: background-color 0.3s;
+    margin-left: 5px;
+}
+
+.edit-btn:hover {
+    background-color: #551792;
+}
+
+.status-complete {
+    color: #218838;
+    font-weight: bold;
+}
+
+.status-incomplete {
+    color: #d32f2f;
+    font-weight: bold;
+}
+
+.renew-btn:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+.modal-body {
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #34495e;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 1em;
+    box-sizing: border-box;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.modal-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s;
+}
+
+.modal-btn-save {
+    background-color: #218838;
+    color: white;
+}
+
+.modal-btn-save:hover {
+    background-color: #229954;
+}
+
+.modal-btn-cancel {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.modal-btn-cancel:hover {
+    background-color: #d63826;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #000;
+}

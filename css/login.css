@@ -1,0 +1,109 @@
+/* ===== GENERAL PAGE STYLING ===== */
+body {
+  font-family: Arial, sans-serif;
+  background-image: url('../img/ww.jpg') !important; /* adjust path relative to CSS file */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+/* ===== LOGIN CONTAINER ===== */
+.login-container {
+  background-color: #ffffff;
+  padding: 30px 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+  width: 350px;
+  max-width: 90%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ===== HEADINGS ===== */
+h2 {
+  text-align: center;
+  margin-bottom: 25px;
+  color: #2c2f63;
+}
+
+/* ===== INPUT FIELDS ===== */
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: 10px 12px;
+  margin: 8px 0 16px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  border-color: #6c63ff;
+  box-shadow: 0 0 4px rgba(108, 99, 255, 0.4);
+  outline: none;
+}
+
+/* ===== SUBMIT BUTTON ===== */
+input[type="submit"] {
+  background-color: #2c2f63;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  width: 100%;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+input[type="submit"]:hover {
+  background-color: #6c63ff;
+}
+
+/* ===== ERROR MESSAGE ===== */
+.error {
+  color: #e74c3c;
+  text-align: center;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.password-container {
+  position: relative;
+}
+
+.password-container input[type="password"],
+.password-container input[type="text"] {
+  width: 100%;
+  padding-right: 38px; /* enough space for icon */
+  height: 38px; /* consistent height */
+  line-height: 38px; /* vertical centering for text */
+  box-sizing: border-box;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px; /* matches text size */
+  color: #666;
+  cursor: pointer;
+  height: 20px;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-password:hover {
+  color: #2c2f63;
+}
