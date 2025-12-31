@@ -1,21 +1,23 @@
-// Contract detail charts
-let contractDeptChart = null;
-let contractNatChart = null;
-let contractMonthlyChart = null;
+    let permitDeptChart = null;
+    let permitNatChart = null;
+    let permitMonthlyChart = null;
 
-// Show contract detail view
-function showContractDetail(contract) {
-    const mainHeader = document.getElementById('contract-main-header');
-    const mainContent = document.getElementById('contract-main-content');
-    const detailView = document.getElementById('contract-detail-view');
-    const detailTitle = document.getElementById('contract-detail-title');
+// Show permit detail view
+function showPermitDetail(status) {
+    const mainHeader = document.getElementById('permit-main-header');
+    const mainContent = document.getElementById('permit-main-content');
+    const detailView = document.getElementById('permit-detail-view');
+    const detailTitle = document.getElementById('permit-detail-title');
     
-    // Update title based on contract
+    // Update title based on status
     const titles = {
-        'extend': 'Contract Extend',
-        'not_extend': 'Contract Not Extend'
+        'expired': 'Expired Permits',
+        'expiring': 'Expiring Soon Permits',
+        'active': 'Active Permits'
     };
-    detailTitle.textContent = titles[contract];
+    detailTitle.textContent = titles[status];
+
+    window.currentPermitStatus = status;
     
     // Hide main content, show detail view
     mainHeader.style.display = 'none';
@@ -23,20 +25,20 @@ function showContractDetail(contract) {
     detailView.style.display = 'block';
     
     // Fetch and display data
-    fetchContractDetail(contract);
+    fetchPermitDetail(status);
     
     // Scroll to top of the section
-    document.getElementById('contract-section').scrollIntoView({ 
+    document.getElementById('work-permit-section').scrollIntoView({ 
         behavior: 'smooth', 
         block: 'start' 
     });
 }
 
-// Hide contract detail view
-function hideContractDetail() {
-    const mainHeader = document.getElementById('contract-main-header');
-    const mainContent = document.getElementById('contract-main-content');
-    const detailView = document.getElementById('contract-detail-view');
+// Hide permit detail view
+function hidePermitDetail() {
+    const mainHeader = document.getElementById('permit-main-header');
+    const mainContent = document.getElementById('permit-main-content');
+    const detailView = document.getElementById('permit-detail-view');
     
     // Show main content, hide detail view
     mainHeader.style.display = 'block';
@@ -44,70 +46,70 @@ function hideContractDetail() {
     detailView.style.display = 'none';
     
     // Destroy existing charts
-    if (contractDeptChart) {
-        contractDeptChart.destroy();
-        contractDeptChart = null;
+    if (permitDeptChart) {
+        permitDeptChart.destroy();
+        permitDeptChart = null;
     }
-    if (contractNatChart) {
-        contractNatChart.destroy();
-        contractNatChart = null;
+    if (permitNatChart) {
+        permitNatChart.destroy();
+        permitNatChart = null;
     }
-    if (contractMonthlyChart) {
-        contractMonthlyChart.destroy();
-        contractMonthlyChart = null;
+    if (permitMonthlyChart) {
+        permitMonthlyChart.destroy();
+        permitMonthlyChart = null;
     }
     
-    // Scroll to top of contract section
-    document.getElementById('contract-section').scrollIntoView({ 
+    // Scroll to top of work permit section
+    document.getElementById('work-permit-section').scrollIntoView({ 
         behavior: 'smooth', 
         block: 'start' 
     });
 }
 
-// Fetch contract detail data via AJAX
-function fetchContractDetail(contract) {
-    console.log('Fetching contract detail for:', contract);
+// Fetch permit detail data via AJAX
+function fetchPermitDetail(status) {
+    console.log('Fetching permit detail for status:', status);
     
-    fetch(`config/contractDetailSQL.php?contract=${contract}`)
+    fetch(`config/permitDetailSQL.php?status=${status}`)
         .then(response => {
-            console.log('Contract - Response status:', response.status);
+            console.log('Response status:', response.status);
             
             if (!response.ok) {
                 return response.text().then(text => {
-                    console.error('Contract - Error response text:', text);
+                    console.error('Error response text:', text);
                     throw new Error(`HTTP error! status: ${response.status}`);
                 });
             }
             return response.text();
         })
         .then(text => {
-            console.log('Contract - Raw response:', text);
+            console.log('Raw response:', text);
             
             try {
                 const data = JSON.parse(text);
-                console.log('Contract - Parsed data:', data);
+                console.log('Parsed data:', data);
                 
                 if (data.success) {
-                    createContractDetailCharts(data.department, data.nationality, data.monthly);
+                    createDetailCharts(data.department, data.nationality, data.monthly);
                 } else {
-                    console.error('Contract - Server returned error:', data);
-                    showContractError();
+                    console.error('Server returned error:', data);
+                    showError();
                 }
             } catch (parseError) {
-                console.error('Contract - JSON parse error:', parseError);
-                showContractError();
+                console.error('JSON parse error:', parseError);
+                showError();
             }
         })
         .catch(error => {
-            console.error('Contract - Fetch error:', error);
-            showContractError();
+            console.error('Fetch error:', error);
+            showError();
         });
 }
 
-function showContractError() {
-    const deptContainer = document.getElementById('contractDepartmentChart')?.parentElement;
-    const natContainer = document.getElementById('contractNationalityChart')?.parentElement;
-    const monthlyContainer = document.getElementById('contractMonthlyChart')?.parentElement;
+function showError() {
+    const deptContainer = document.getElementById('permitDepartmentChart')?.parentElement;
+    const natContainer = document.getElementById('permitNationalityChart')?.parentElement;
+    const monthlyContainer = document.getElementById('permitMonthlyChart')?.parentElement;
     
     if (deptContainer) {
         deptContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-building"></i> Employees by Department</div><p style="text-align: center; padding: 40px; color: #d9534f;"><i class="fa-solid fa-exclamation-circle"></i><br><br>Error loading data</p>';
@@ -116,18 +118,18 @@ function showContractError() {
         natContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-globe"></i> Employees by Nationality</div><p style="text-align: center; padding: 40px; color: #d9534f;"><i class="fa-solid fa-exclamation-circle"></i><br><br>Error loading data</p>';
     }
     if (monthlyContainer) {
-        monthlyContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> Monthly Breakdown by Permit Expiry</div><p style="text-align: center; padding: 40px; color: #d9534f;"><i class="fa-solid fa-exclamation-circle"></i><br><br>Error loading data</p>';
+        monthlyContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> Monthly Breakdown</div><p style="text-align: center; padding: 40px; color: #d9534f;"><i class="fa-solid fa-exclamation-circle"></i><br><br>Error loading data</p>';
     }
 }
 
-// Create contract detail charts (PIE + BAR)
-function createContractDetailCharts(departmentData, nationalityData, monthlyData) {
-    console.log('Creating contract charts with data:', { departmentData, nationalityData, monthlyData });
+// Create detail charts (PIE + BAR)
+function createDetailCharts(departmentData, nationalityData, monthlyData) {
+    console.log('Creating charts with data:', { departmentData, nationalityData, monthlyData });
     
     // Destroy existing charts if they exist
-    if (contractDeptChart) contractDeptChart.destroy();
-    if (contractNatChart) contractNatChart.destroy();
-    if (contractMonthlyChart) contractMonthlyChart.destroy();
+    if (permitDeptChart) permitDeptChart.destroy();
+    if (permitNatChart) permitNatChart.destroy();
+    if (permitMonthlyChart) permitMonthlyChart.destroy();
     
     // Generate colors
     function generateColors(count) {
@@ -151,14 +153,14 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
     }
     
     // Department Chart
-    const deptContainer = document.getElementById('contractDepartmentChart')?.parentElement;
+    const deptContainer = document.getElementById('permitDepartmentChart')?.parentElement;
     if (!departmentData || departmentData.length === 0) {
         if (deptContainer) {
             deptContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-building"></i> Employees by Department</div><p style="text-align: center; padding: 40px; color: #999;"><i class="fa-solid fa-inbox"></i><br><br>No department data available</p>';
         }
     } else {
-        if (!document.getElementById('contractDepartmentChart') && deptContainer) {
-            deptContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-building"></i> Employees by Department</div><canvas id="contractDepartmentChart"></canvas>';
+        if (!document.getElementById('permitDepartmentChart') && deptContainer) {
+            deptContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-building"></i> Employees by Department</div><canvas id="permitDepartmentChart"></canvas>';
         }
         
         const deptLabels = departmentData.map(item => item.label);
@@ -166,9 +168,9 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
         const deptColors = generateColors(deptLabels.length);
         const deptHoverColors = generateHoverColors(deptColors);
         
-        const deptCtx = document.getElementById('contractDepartmentChart')?.getContext('2d');
+        const deptCtx = document.getElementById('permitDepartmentChart')?.getContext('2d');
         if (deptCtx) {
-            contractDeptChart = new Chart(deptCtx, {
+            permitDeptChart = new Chart(deptCtx, {
                 type: 'pie',
                 data: {
                     labels: deptLabels,
@@ -220,14 +222,14 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
     }
     
     // Nationality Chart
-    const natContainer = document.getElementById('contractNationalityChart')?.parentElement;
+    const natContainer = document.getElementById('permitNationalityChart')?.parentElement;
     if (!nationalityData || nationalityData.length === 0) {
         if (natContainer) {
             natContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-globe"></i> Employees by Nationality</div><p style="text-align: center; padding: 40px; color: #999;"><i class="fa-solid fa-inbox"></i><br><br>No nationality data available</p>';
         }
     } else {
-        if (!document.getElementById('contractNationalityChart') && natContainer) {
-            natContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-globe"></i> Employees by Nationality</div><canvas id="contractNationalityChart"></canvas>';
+        if (!document.getElementById('permitNationalityChart') && natContainer) {
+            natContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-globe"></i> Employees by Nationality</div><canvas id="permitNationalityChart"></canvas>';
         }
         
         const natLabels = nationalityData.map(item => item.label);
@@ -235,9 +237,9 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
         const natColors = generateColors(natLabels.length);
         const natHoverColors = generateHoverColors(natColors);
         
-        const natCtx = document.getElementById('contractNationalityChart')?.getContext('2d');
+        const natCtx = document.getElementById('permitNationalityChart')?.getContext('2d');
         if (natCtx) {
-            contractNatChart = new Chart(natCtx, {
+            permitNatChart = new Chart(natCtx, {
                 type: 'pie',
                 data: {
                     labels: natLabels,
@@ -289,32 +291,44 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
     }
     
     // Monthly Breakdown Bar Chart
-    const monthlyContainer = document.getElementById('contractMonthlyChart')?.parentElement;
+    const monthlyContainer = document.getElementById('permitMonthlyChart')?.parentElement;
     if (!monthlyData || monthlyData.length === 0) {
         if (monthlyContainer) {
-            monthlyContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> Monthly Breakdown by Permit Expiry</div><p style="text-align: center; padding: 40px; color: #999;"><i class="fa-solid fa-inbox"></i><br><br>No monthly data available</p>';
+            const statusTitles = {
+                'expired': 'Expired Permits',
+                'expiring': 'Expiring Soon Permits',
+                'active': 'Active Permits'
+            };
+            const statusText = statusTitles[window.currentPermitStatus] || 'Permits';
+            monthlyContainer.innerHTML = `<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> ${statusText} - Monthly Breakdown</div><p style="text-align: center; padding: 40px; color: #999;"><i class="fa-solid fa-inbox"></i><br><br>No monthly data available</p>`;
         }
     } else {
-        if (!document.getElementById('contractMonthlyChart') && monthlyContainer) {
-            monthlyContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> Monthly Breakdown by Permit Expiry</div><canvas id="contractMonthlyChart"></canvas>';
+        if (!document.getElementById('permitMonthlyChart') && monthlyContainer) {
+            const statusTitles = {
+                'expired': 'Expired Permits',
+                'expiring': 'Expiring Soon Permits',
+                'active': 'Active Permits'
+            };
+            const statusText = statusTitles[window.currentPermitStatus] || 'Permits';
+            monthlyContainer.innerHTML = `<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> ${statusText} - Monthly Breakdown</div><canvas id="permitMonthlyChart"></canvas>`;
         }
         
         const monthlyLabels = monthlyData.map(item => item.label);
         const monthlyCounts = monthlyData.map(item => item.count);
         
-        const monthlyCtx = document.getElementById('contractMonthlyChart')?.getContext('2d');
+        const monthlyCtx = document.getElementById('permitMonthlyChart')?.getContext('2d');
         if (monthlyCtx) {
-            contractMonthlyChart = new Chart(monthlyCtx, {
+            permitMonthlyChart = new Chart(monthlyCtx, {
                 type: 'bar',
                 data: {
                     labels: monthlyLabels,
                     datasets: [{
                         label: 'Number of Employees',
                         data: monthlyCounts,
-                        backgroundColor: 'rgba(75, 192, 192, 0.7)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
                         borderWidth: 1,
-                        hoverBackgroundColor: 'rgba(75, 192, 192, 0.9)'
+                        hoverBackgroundColor: 'rgba(54, 162, 235, 0.9)'
                     }]
                 },
                 options: {
@@ -352,10 +366,16 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
             const totalMonthly = monthlyCounts.reduce((a, b) => a + b, 0);
             const monthlyTitle = monthlyContainer.querySelector('.chart-title');
             if (monthlyTitle) {
-                monthlyTitle.innerHTML = `<i class="fa-solid fa-calendar-alt"></i> Monthly Breakdown by Permit Expiry <small style="opacity: 0.7;">(Total: ${totalMonthly})</small>`;
+                const statusTitles = {
+                    'expired': 'Expired Permits',
+                    'expiring': 'Expiring Soon Permits',
+                    'active': 'Active Permits'
+                };
+                const statusText = statusTitles[window.currentPermitStatus] || 'Permits';
+                monthlyTitle.innerHTML = `<i class="fa-solid fa-calendar-alt"></i> ${statusText} - Monthly Breakdown <small style="opacity: 0.7;">(Total: ${totalMonthly})</small>`;
             }
         }
     }
     
-    console.log('All contract charts created successfully');
+    console.log('All charts created successfully');
 }

@@ -1,21 +1,24 @@
-// Contract detail charts
-let contractDeptChart = null;
-let contractNatChart = null;
-let contractMonthlyChart = null;
+// Passport detail charts
+let passportDeptChart = null;
+let passportNatChart = null;
+let passportMonthlyChart = null;
 
-// Show contract detail view
-function showContractDetail(contract) {
-    const mainHeader = document.getElementById('contract-main-header');
-    const mainContent = document.getElementById('contract-main-content');
-    const detailView = document.getElementById('contract-detail-view');
-    const detailTitle = document.getElementById('contract-detail-title');
+// Show passport detail view
+function showPassportDetail(status) {
+    const mainHeader = document.getElementById('passport-main-header');
+    const mainContent = document.getElementById('passport-main-content');
+    const detailView = document.getElementById('passport-detail-view');
+    const detailTitle = document.getElementById('passport-detail-title');
     
-    // Update title based on contract
+    // Update title based on status
     const titles = {
-        'extend': 'Contract Extend',
-        'not_extend': 'Contract Not Extend'
+        'expired': 'Expired Passports',
+        'expiring': 'Expiring Soon Passports',
+        'active': 'Active Passports'
     };
-    detailTitle.textContent = titles[contract];
+    detailTitle.textContent = titles[status];
+
+    window.currentPassportStatus = status;  
     
     // Hide main content, show detail view
     mainHeader.style.display = 'none';
@@ -23,20 +26,20 @@ function showContractDetail(contract) {
     detailView.style.display = 'block';
     
     // Fetch and display data
-    fetchContractDetail(contract);
+    fetchPassportDetail(status);
     
     // Scroll to top of the section
-    document.getElementById('contract-section').scrollIntoView({ 
+    document.getElementById('passport-section').scrollIntoView({ 
         behavior: 'smooth', 
         block: 'start' 
     });
 }
 
-// Hide contract detail view
-function hideContractDetail() {
-    const mainHeader = document.getElementById('contract-main-header');
-    const mainContent = document.getElementById('contract-main-content');
-    const detailView = document.getElementById('contract-detail-view');
+// Hide passport detail view
+function hidePassportDetail() {
+    const mainHeader = document.getElementById('passport-main-header');
+    const mainContent = document.getElementById('passport-main-content');
+    const detailView = document.getElementById('passport-detail-view');
     
     // Show main content, hide detail view
     mainHeader.style.display = 'block';
@@ -44,70 +47,70 @@ function hideContractDetail() {
     detailView.style.display = 'none';
     
     // Destroy existing charts
-    if (contractDeptChart) {
-        contractDeptChart.destroy();
-        contractDeptChart = null;
+    if (passportDeptChart) {
+        passportDeptChart.destroy();
+        passportDeptChart = null;
     }
-    if (contractNatChart) {
-        contractNatChart.destroy();
-        contractNatChart = null;
+    if (passportNatChart) {
+        passportNatChart.destroy();
+        passportNatChart = null;
     }
-    if (contractMonthlyChart) {
-        contractMonthlyChart.destroy();
-        contractMonthlyChart = null;
+    if (passportMonthlyChart) {
+        passportMonthlyChart.destroy();
+        passportMonthlyChart = null;
     }
     
-    // Scroll to top of contract section
-    document.getElementById('contract-section').scrollIntoView({ 
+    // Scroll to top of passport section
+    document.getElementById('passport-section').scrollIntoView({ 
         behavior: 'smooth', 
         block: 'start' 
     });
 }
 
-// Fetch contract detail data via AJAX
-function fetchContractDetail(contract) {
-    console.log('Fetching contract detail for:', contract);
+// Fetch passport detail data via AJAX
+function fetchPassportDetail(status) {
+    console.log('Fetching passport detail for status:', status);
     
-    fetch(`config/contractDetailSQL.php?contract=${contract}`)
+    fetch(`config/passportDetailSQL.php?status=${status}`)
         .then(response => {
-            console.log('Contract - Response status:', response.status);
+            console.log('Passport - Response status:', response.status);
             
             if (!response.ok) {
                 return response.text().then(text => {
-                    console.error('Contract - Error response text:', text);
+                    console.error('Passport - Error response text:', text);
                     throw new Error(`HTTP error! status: ${response.status}`);
                 });
             }
             return response.text();
         })
         .then(text => {
-            console.log('Contract - Raw response:', text);
+            console.log('Passport - Raw response:', text);
             
             try {
                 const data = JSON.parse(text);
-                console.log('Contract - Parsed data:', data);
+                console.log('Passport - Parsed data:', data);
                 
                 if (data.success) {
-                    createContractDetailCharts(data.department, data.nationality, data.monthly);
+                    createPassportDetailCharts(data.department, data.nationality, data.monthly);
                 } else {
-                    console.error('Contract - Server returned error:', data);
-                    showContractError();
+                    console.error('Passport - Server returned error:', data);
+                    showPassportError();
                 }
             } catch (parseError) {
-                console.error('Contract - JSON parse error:', parseError);
-                showContractError();
+                console.error('Passport - JSON parse error:', parseError);
+                showPassportError();
             }
         })
         .catch(error => {
-            console.error('Contract - Fetch error:', error);
-            showContractError();
+            console.error('Passport - Fetch error:', error);
+            showPassportError();
         });
 }
 
-function showContractError() {
-    const deptContainer = document.getElementById('contractDepartmentChart')?.parentElement;
-    const natContainer = document.getElementById('contractNationalityChart')?.parentElement;
-    const monthlyContainer = document.getElementById('contractMonthlyChart')?.parentElement;
+function showPassportError() {
+    const deptContainer = document.getElementById('passportDepartmentChart')?.parentElement;
+    const natContainer = document.getElementById('passportNationalityChart')?.parentElement;
+    const monthlyContainer = document.getElementById('passportMonthlyChart')?.parentElement;
     
     if (deptContainer) {
         deptContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-building"></i> Employees by Department</div><p style="text-align: center; padding: 40px; color: #d9534f;"><i class="fa-solid fa-exclamation-circle"></i><br><br>Error loading data</p>';
@@ -116,18 +119,27 @@ function showContractError() {
         natContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-globe"></i> Employees by Nationality</div><p style="text-align: center; padding: 40px; color: #d9534f;"><i class="fa-solid fa-exclamation-circle"></i><br><br>Error loading data</p>';
     }
     if (monthlyContainer) {
-        monthlyContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> Monthly Breakdown by Permit Expiry</div><p style="text-align: center; padding: 40px; color: #d9534f;"><i class="fa-solid fa-exclamation-circle"></i><br><br>Error loading data</p>';
+        monthlyContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> Monthly Breakdown by Passport Expiry</div><p style="text-align: center; padding: 40px; color: #d9534f;"><i class="fa-solid fa-exclamation-circle"></i><br><br>Error loading data</p>';
     }
 }
 
-// Create contract detail charts (PIE + BAR)
-function createContractDetailCharts(departmentData, nationalityData, monthlyData) {
-    console.log('Creating contract charts with data:', { departmentData, nationalityData, monthlyData });
+// Create passport detail charts (PIE + BAR)
+function createPassportDetailCharts(departmentData, nationalityData, monthlyData) {
+    console.log('Creating passport charts with data:', { departmentData, nationalityData, monthlyData });
     
     // Destroy existing charts if they exist
-    if (contractDeptChart) contractDeptChart.destroy();
-    if (contractNatChart) contractNatChart.destroy();
-    if (contractMonthlyChart) contractMonthlyChart.destroy();
+    if (passportDeptChart) {
+        passportDeptChart.destroy();
+        passportDeptChart = null;
+    }
+    if (passportNatChart) {
+        passportNatChart.destroy();
+        passportNatChart = null;
+    }
+    if (passportMonthlyChart) {
+        passportMonthlyChart.destroy();
+        passportMonthlyChart = null;
+    }
     
     // Generate colors
     function generateColors(count) {
@@ -151,14 +163,17 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
     }
     
     // Department Chart
-    const deptContainer = document.getElementById('contractDepartmentChart')?.parentElement;
+    // Get fresh reference each time
+    let deptContainer = document.getElementById('passportDepartmentChart')?.parentElement;
     if (!departmentData || departmentData.length === 0) {
         if (deptContainer) {
             deptContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-building"></i> Employees by Department</div><p style="text-align: center; padding: 40px; color: #999;"><i class="fa-solid fa-inbox"></i><br><br>No department data available</p>';
         }
     } else {
-        if (!document.getElementById('contractDepartmentChart') && deptContainer) {
-            deptContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-building"></i> Employees by Department</div><canvas id="contractDepartmentChart"></canvas>';
+        // Get fresh reference again after potential innerHTML changes
+        deptContainer = document.getElementById('passportDepartmentChart')?.parentElement;
+        if (deptContainer) {
+            deptContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-building"></i> Employees by Department</div><canvas id="passportDepartmentChart"></canvas>';
         }
         
         const deptLabels = departmentData.map(item => item.label);
@@ -166,9 +181,9 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
         const deptColors = generateColors(deptLabels.length);
         const deptHoverColors = generateHoverColors(deptColors);
         
-        const deptCtx = document.getElementById('contractDepartmentChart')?.getContext('2d');
+        const deptCtx = document.getElementById('passportDepartmentChart')?.getContext('2d');
         if (deptCtx) {
-            contractDeptChart = new Chart(deptCtx, {
+            passportDeptChart = new Chart(deptCtx, {
                 type: 'pie',
                 data: {
                     labels: deptLabels,
@@ -212,7 +227,9 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
             });
             
             const totalDept = deptCounts.reduce((a, b) => a + b, 0);
-            const deptTitle = deptContainer.querySelector('.chart-title');
+            // Get fresh container reference for title update
+            const currentDeptContainer = document.getElementById('passportDepartmentChart')?.parentElement;
+            const deptTitle = currentDeptContainer?.querySelector('.chart-title');
             if (deptTitle) {
                 deptTitle.innerHTML = `<i class="fa-solid fa-building"></i> Employees by Department <small style="opacity: 0.7;">(Total: ${totalDept})</small>`;
             }
@@ -220,14 +237,16 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
     }
     
     // Nationality Chart
-    const natContainer = document.getElementById('contractNationalityChart')?.parentElement;
+    let natContainer = document.getElementById('passportNationalityChart')?.parentElement;
     if (!nationalityData || nationalityData.length === 0) {
         if (natContainer) {
             natContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-globe"></i> Employees by Nationality</div><p style="text-align: center; padding: 40px; color: #999;"><i class="fa-solid fa-inbox"></i><br><br>No nationality data available</p>';
         }
     } else {
-        if (!document.getElementById('contractNationalityChart') && natContainer) {
-            natContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-globe"></i> Employees by Nationality</div><canvas id="contractNationalityChart"></canvas>';
+        // Get fresh reference again
+        natContainer = document.getElementById('passportNationalityChart')?.parentElement;
+        if (natContainer) {
+            natContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-globe"></i> Employees by Nationality</div><canvas id="passportNationalityChart"></canvas>';
         }
         
         const natLabels = nationalityData.map(item => item.label);
@@ -235,9 +254,9 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
         const natColors = generateColors(natLabels.length);
         const natHoverColors = generateHoverColors(natColors);
         
-        const natCtx = document.getElementById('contractNationalityChart')?.getContext('2d');
+        const natCtx = document.getElementById('passportNationalityChart')?.getContext('2d');
         if (natCtx) {
-            contractNatChart = new Chart(natCtx, {
+            passportNatChart = new Chart(natCtx, {
                 type: 'pie',
                 data: {
                     labels: natLabels,
@@ -281,40 +300,56 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
             });
             
             const totalNat = natCounts.reduce((a, b) => a + b, 0);
-            const natTitle = natContainer.querySelector('.chart-title');
+            // Get fresh container reference
+            const currentNatContainer = document.getElementById('passportNationalityChart')?.parentElement;
+            const natTitle = currentNatContainer?.querySelector('.chart-title');
             if (natTitle) {
                 natTitle.innerHTML = `<i class="fa-solid fa-globe"></i> Employees by Nationality <small style="opacity: 0.7;">(Total: ${totalNat})</small>`;
             }
         }
     }
-    
+   
     // Monthly Breakdown Bar Chart
-    const monthlyContainer = document.getElementById('contractMonthlyChart')?.parentElement;
+    let monthlyContainer = document.getElementById('passportMonthlyChart')?.parentElement;
     if (!monthlyData || monthlyData.length === 0) {
         if (monthlyContainer) {
-            monthlyContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> Monthly Breakdown by Permit Expiry</div><p style="text-align: center; padding: 40px; color: #999;"><i class="fa-solid fa-inbox"></i><br><br>No monthly data available</p>';
+            const statusTitles = {
+                'expired': 'Expired Passports',
+                'expiring': 'Expiring Soon Passports',
+                'active': 'Active Passports'
+            };
+            const statusText = statusTitles[window.currentPassportStatus] || 'Passports';
+            monthlyContainer.innerHTML = `<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> ${statusText} - Monthly Breakdown</div><p style="text-align: center; padding: 40px; color: #999;"><i class="fa-solid fa-inbox"></i><br><br>No monthly data available</p>`;
         }
     } else {
-        if (!document.getElementById('contractMonthlyChart') && monthlyContainer) {
-            monthlyContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> Monthly Breakdown by Permit Expiry</div><canvas id="contractMonthlyChart"></canvas>';
+        // Get fresh reference again
+        monthlyContainer = document.getElementById('passportMonthlyChart')?.parentElement;
+        if (monthlyContainer) {
+            const statusTitles = {
+                'expired': 'Expired Passports',
+                'expiring': 'Expiring Soon Passports',
+                'active': 'Active Passports'
+            };
+            const statusText = statusTitles[window.currentPassportStatus] || 'Passports';
+            monthlyContainer.innerHTML = `<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> ${statusText} - Monthly Breakdown</div><canvas id="passportMonthlyChart"></canvas>`;
         }
         
         const monthlyLabels = monthlyData.map(item => item.label);
         const monthlyCounts = monthlyData.map(item => item.count);
         
-        const monthlyCtx = document.getElementById('contractMonthlyChart')?.getContext('2d');
+        const monthlyCtx = document.getElementById('passportMonthlyChart')?.getContext('2d');
         if (monthlyCtx) {
-            contractMonthlyChart = new Chart(monthlyCtx, {
+            passportMonthlyChart = new Chart(monthlyCtx, {
                 type: 'bar',
                 data: {
                     labels: monthlyLabels,
                     datasets: [{
                         label: 'Number of Employees',
                         data: monthlyCounts,
-                        backgroundColor: 'rgba(75, 192, 192, 0.7)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(153, 102, 255, 0.7)',
+                        borderColor: 'rgba(153, 102, 255, 1)',
                         borderWidth: 1,
-                        hoverBackgroundColor: 'rgba(75, 192, 192, 0.9)'
+                        hoverBackgroundColor: 'rgba(153, 102, 255, 0.9)'
                     }]
                 },
                 options: {
@@ -350,12 +385,20 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
             });
             
             const totalMonthly = monthlyCounts.reduce((a, b) => a + b, 0);
-            const monthlyTitle = monthlyContainer.querySelector('.chart-title');
+            // Get fresh container reference
+            const currentMonthlyContainer = document.getElementById('passportMonthlyChart')?.parentElement;
+            const monthlyTitle = currentMonthlyContainer?.querySelector('.chart-title');
             if (monthlyTitle) {
-                monthlyTitle.innerHTML = `<i class="fa-solid fa-calendar-alt"></i> Monthly Breakdown by Permit Expiry <small style="opacity: 0.7;">(Total: ${totalMonthly})</small>`;
+                const statusTitles = {
+                    'expired': 'Expired Passports',
+                    'expiring': 'Expiring Soon Passports',
+                    'active': 'Active Passports'
+                };
+                const statusText = statusTitles[window.currentPassportStatus] || 'Passports';
+                monthlyTitle.innerHTML = `<i class="fa-solid fa-calendar-alt"></i> ${statusText} - Monthly Breakdown <small style="opacity: 0.7;">(Total: ${totalMonthly})</small>`;
             }
         }
     }
     
-    console.log('All contract charts created successfully');
+    console.log('All passport charts created successfully');
 }
