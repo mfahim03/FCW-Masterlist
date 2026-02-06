@@ -3,14 +3,8 @@ include 'db.php';
 include 'config/fetchEmployee.php';
 session_start();
 
-if (!isset($_SESSION['username'])) {
-    header("Location: login.php");
-    exit;
-}
-
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    // If not admin, redirect to user view
-    header("Location: employeeInfoView.php");
+if (!isset($_SESSION['username']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header("Location: indexView.php");
     exit;
 }
 ?>
@@ -56,6 +50,10 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
         <div class="context-menu-item" onclick="viewEmployee()">
             <i class="fa-solid fa-eye"></i>
             <span>View Details</span>
+        </div>
+        <div class="context-menu-item" onclick="moveEmployee()">
+            <i class="fa-solid fa-user-xmark"></i>
+            <span>Move to EOC/Runaway</span>
         </div>
         <div class="context-menu-item delete" onclick="deleteEmployee()">
             <i class="fa-solid fa-trash"></i>

@@ -4,12 +4,7 @@ include 'db.php';
 include 'config/dashboardSQL.php';
 session_start();
 
-if (!isset($_SESSION['username'])) {
-    header("Location: login.php");
-    exit;
-}
-
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+if (!isset($_SESSION['username']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     header("Location: indexView.php");
     exit;
 }
@@ -53,7 +48,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
         <a href="#" class="logout-link">
             <i class="fa-solid fa-right-from-bracket" style="font-size: medium;"></i>
         </a>
-        <p>Foreign Contract Worker Dashboard</p>
+        <p>FCW Dashboard</p>
     </div>
 
     <?php include 'model/navigationBar.php'; ?>
@@ -331,6 +326,75 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
             </div>
         </div>
 
+        <!-- EOC/RUNAWAY SECTION -->
+        <div id="eoc-runaway-section" class="dashboard-section">
+            <div id="eoc-main-header">
+                <button class="back-btn" onclick="backToMain()">
+                    <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+                </button>
+                
+                <div class="section-title">
+                    <i class="fa-solid fa-user-xmark"></i>
+                    EOC/Runaway Overview
+                </div>
+            </div>
+
+            <div id="eoc-main-content">
+                <div class="stats-grid">
+                    <div class="stat-card eoc-card clickable" onclick="showEocDetail('eoc')">
+                        <i class="fa-solid fa-user-xmark"></i>
+                        <div class="stat-number"><?php echo number_format($eoc_summary['EOCCount']); ?></div>
+                        <div class="stat-label">End of Contract (EOC)</div>
+                        <small style="display: block; margin-top: 5px; color: white;">Click for details</small>
+                    </div>
+                    <div class="stat-card runaway-card clickable" onclick="showEocDetail('runaway')">
+                        <i class="fa-solid fa-person-running"></i>
+                        <div class="stat-number"><?php echo number_format($eoc_summary['RunawayCount']); ?></div>
+                        <div class="stat-label">Runaway</div>
+                        <small style="display: block; margin-top: 5px; color: white;">Click for details</small>
+                    </div>
+                </div>
+
+                <div id="eoc-overview-charts">
+                    <div class="chart-container">
+                        <div class="chart-title">
+                            <i class="fa-solid fa-chart-line"></i> EOC & Runaway Trend by Hire Date
+                        </div>
+                        <canvas id="eocMonthlyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DETAIL VIEW -->
+            <div id="eoc-detail-view" style="display: none;">
+                <div>
+                    <button class="back-btn" onclick="hideEocDetail()">
+                        <i class="fa-solid fa-arrow-left"></i> Back to Overview
+                    </button>
+                </div>
+                <div class="section-title">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span id="eoc-detail-title">EOC/Runaway Detail View</span>
+                </div>
+
+                <div class="detail-charts-container">
+                    <div class="chart-container">
+                        <div class="chart-title">
+                            <i class="fa-solid fa-building"></i> EOC & Runaway by Department
+                        </div>
+                        <canvas id="eocDepartmentChart"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <div class="chart-title">
+                            <i class="fa-solid fa-globe"></i> EOC & Runaway by Nationality
+                        </div>
+                        <canvas id="eocNationalityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -345,6 +409,21 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
         const contractLabels = <?php echo json_encode($contractLabels); ?>;
         const contractExtendCounts = <?php echo json_encode($contractExtendCounts); ?>;
         const contractNotExtendCounts = <?php echo json_encode($contractNotExtendCounts); ?>;
+
+        // Add these variables to your existing script section in index.php
+        // After the existing variables (permitLabels, passportLabels, etc.)
+
+        const eocDeptLabels = <?php echo json_encode($eocDeptLabels); ?>;
+        const eocDeptEOCCounts = <?php echo json_encode($eocDeptEOCCounts); ?>;
+        const eocDeptRunawayCounts = <?php echo json_encode($eocDeptRunawayCounts); ?>;
+
+        const eocNatLabels = <?php echo json_encode($eocNatLabels); ?>;
+        const eocNatEOCCounts = <?php echo json_encode($eocNatEOCCounts); ?>;
+        const eocNatRunawayCounts = <?php echo json_encode($eocNatRunawayCounts); ?>;
+
+        const eocHireDateLabels = <?php echo json_encode($eocHireDateLabels); ?>;
+        const eocHireDateEOCCounts = <?php echo json_encode($eocHireDateEOCCounts); ?>;
+        const eocHireDateRunawayCounts = <?php echo json_encode($eocHireDateRunawayCounts); ?>;
 
         function navigateToSection(sectionName) {
             const mainDashboard = document.getElementById('main-dashboard');
@@ -393,5 +472,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     <script src="js/details/permitDetail.js"></script>
     <script src="js/details/passportDetail.js"></script>
     <script src="js/details/contractDetail.js"></script>
+    <script src="js/details/eocDetail.js"></script>
 </body>
 </html>

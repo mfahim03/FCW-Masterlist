@@ -13,8 +13,8 @@ session_start();
 // Clear any output that might have been generated
 ob_end_clean();
 
-if (!isset($_SESSION['username'])) {
-    header("Location: login.php");
+if (!isset($_SESSION['username']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header("Location: indexView.php");
     exit;
 }
 
@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] != 'POST') {
 }
 
 // Validate database connection
-if (!isset($conn1) || $conn1 === false) {
+if (!isset($conn2) || $conn2 === false) {
     $_SESSION['error'] = "Database connection failed. Please check your database settings.";
     header("Location: employeeInfo.php");
     exit;
@@ -44,8 +44,8 @@ if (empty($employee_id)) {
 // Check if user wants to remove the image
 if (isset($_POST['remove_image']) && $_POST['remove_image'] == '1') {
     // Get current image path
-    $old_image_sql = "SELECT [ImagePath] FROM [FCW_List].[dbo].[Employee] WHERE [Employee#] = ?";
-    $old_image_stmt = sqlsrv_query($conn1, $old_image_sql, [$employee_id]);
+    $old_image_sql = "SELECT [ImagePath] FROM [Updated_FCW_List].[dbo].[Employee] WHERE [Employee#] = ?";
+    $old_image_stmt = sqlsrv_query($conn2, $old_image_sql, [$employee_id]);
     
     if ($old_image_stmt !== false) {
         if ($old_image_row = sqlsrv_fetch_array($old_image_stmt, SQLSRV_FETCH_ASSOC)) {
@@ -99,9 +99,9 @@ if (!$removeImage && isset($_FILES['employee_image']) && $_FILES['employee_image
     $target_file = $upload_dir . $new_filename;
     
     // Delete old image if exists
-    $old_image_sql = "SELECT [ImagePath] FROM [FCW_List].[dbo].[Employee] WHERE [Employee#] = ?";
+    $old_image_sql = "SELECT [ImagePath] FROM [Updated_FCW_List].[dbo].[Employee] WHERE [Employee#] = ?";
     $old_image_params = [$employee_id];
-    $old_image_stmt = sqlsrv_query($conn1, $old_image_sql, $old_image_params);
+    $old_image_stmt = sqlsrv_query($conn2, $old_image_sql, $old_image_params);
     
     if ($old_image_stmt !== false) {
         if ($old_image_row = sqlsrv_fetch_array($old_image_stmt, SQLSRV_FETCH_ASSOC)) {
@@ -133,7 +133,7 @@ if (!in_array($medicalStatus, ['Complete', 'Incomplete'])) {
 $medicalDateValue = ($medicalStatus === 'Complete') ? date('Y-m-d') : null;
 
 // Build the UPDATE query
-$sql = "UPDATE [FCW_List].[dbo].[Employee] SET 
+$sql = "UPDATE [Updated_FCW_List].[dbo].[Employee] SET 
         [Name] = ?,
         [Permit Name] = ?,
         [Birthdate] = ?,
@@ -210,7 +210,7 @@ if ($imagePath !== null || $removeImage) {
                          WHERE TABLE_NAME = 'Employee' 
                          AND TABLE_SCHEMA = 'dbo' 
                          AND COLUMN_NAME = 'ImagePath'";
-    $check_column_stmt = sqlsrv_query($conn1, $check_column_sql);
+    $check_column_stmt = sqlsrv_query($conn2, $check_column_sql);
     
     if ($check_column_stmt && sqlsrv_fetch_array($check_column_stmt, SQLSRV_FETCH_ASSOC)) {
         // Column exists, add to query
@@ -227,7 +227,7 @@ $sql .= " WHERE [Employee#] = ?";
 $params[] = $employee_id;
 
 // Execute update
-$stmt = sqlsrv_query($conn1, $sql, $params);
+$stmt = sqlsrv_query($conn2, $sql, $params);
 
 if ($stmt === false) {
     $errors = sqlsrv_errors();

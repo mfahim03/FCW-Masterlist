@@ -13,8 +13,8 @@ session_start();
 // Clear any output that might have been generated
 ob_end_clean();
 
-if (!isset($_SESSION['username'])) {
-    header("Location: login.php");
+if (!isset($_SESSION['username']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header("Location: indexView.php");
     exit;
 }
 
@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] != 'POST') {
 }
 
 // Validate database connection
-if (!isset($conn1) || $conn1 === false) {
+if (!isset($conn2) || $conn2 === false) {
     $_SESSION['error'] = "Database connection failed. Please check your database settings.";
     header("Location: addEmployee.php");
     exit;
@@ -79,9 +79,9 @@ if (empty($_POST['nationality_id'])) {
 }
 
 // Check if employee ID already exists
-$check_sql = "SELECT [Employee#] FROM [FCW_List].[dbo].[Employee] WHERE [Employee#] = ?";
+$check_sql = "SELECT [Employee#] FROM [Updated_FCW_List].[dbo].[Employee] WHERE [Employee#] = ?";
 $check_params = [$employee_id];
-$check_stmt = sqlsrv_query($conn1, $check_sql, $check_params);
+$check_stmt = sqlsrv_query($conn2, $check_sql, $check_params);
 
 if ($check_stmt === false) {
     $errors = sqlsrv_errors();
@@ -166,7 +166,7 @@ $check_column_sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
                      WHERE TABLE_NAME = 'Employee' 
                      AND TABLE_SCHEMA = 'dbo' 
                      AND COLUMN_NAME = 'ImagePath'";
-$check_column_stmt = sqlsrv_query($conn1, $check_column_sql);
+$check_column_stmt = sqlsrv_query($conn2, $check_column_sql);
 $has_image_column = false;
 
 if ($check_column_stmt && sqlsrv_fetch_array($check_column_stmt, SQLSRV_FETCH_ASSOC)) {
@@ -192,7 +192,7 @@ if ($imagePath && $has_image_column) {
 }
 
 // Prepare insert query
-$sql = "INSERT INTO [FCW_List].[dbo].[Employee] ($columns) VALUES ($placeholders)";
+$sql = "INSERT INTO [Updated_FCW_List].[dbo].[Employee] ($columns) VALUES ($placeholders)";
 
 // Prepare parameters
 $params = [
@@ -237,7 +237,7 @@ if ($imagePath && $has_image_column) {
 }
 
 // Execute insert
-$stmt = sqlsrv_query($conn1, $sql, $params);
+$stmt = sqlsrv_query($conn2, $sql, $params);
 
 if ($stmt === false) {
     // If insert fails and image was uploaded, delete the image

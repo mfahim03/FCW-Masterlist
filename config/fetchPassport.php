@@ -30,11 +30,11 @@ if ($nationalityFilter !== 'all') {
 // Count total records for current filter
 $count_sql = "
     SELECT COUNT(*) as total 
-    FROM [FCW_List].[dbo].[Employee] AS e
-    LEFT JOIN [FCW_List].[dbo].[Nationality] AS n ON e.[NationalityID] = n.[NationalityID]
+    FROM [Updated_FCW_List].[dbo].[Employee] AS e
+    LEFT JOIN [Updated_FCW_List].[dbo].[Nationality] AS n ON e.[NationalityID] = n.[NationalityID]
     $whereConditions
 ";
-$count_stmt = sqlsrv_query($conn1, $count_sql);
+$count_stmt = sqlsrv_query($conn2, $count_sql);
 $count_row = sqlsrv_fetch_array($count_stmt, SQLSRV_FETCH_ASSOC);
 $total_records = $count_row['total'];
 $total_pages = max(1, ceil($total_records / $records_per_page));
@@ -53,14 +53,15 @@ $sql = "
         e.[Permit Name],
         e.[Old Passport],
         e.[New Passport],
+        e.[Work Permit Expiry (NEW)],
         e.[Passport Expiry Date],
         e.[SPIKPA Expiry],
         e.[Passport Renewed Status],
         n.[Nationality]
-    FROM [FCW_List].[dbo].[Employee] AS e
-    LEFT JOIN [FCW_List].[dbo].[Nationality] AS n
+    FROM [Updated_FCW_List].[dbo].[Employee] AS e
+    LEFT JOIN [Updated_FCW_List].[dbo].[Nationality] AS n
         ON e.[NationalityID] = n.[NationalityID]
-    LEFT JOIN [FCW_List].[dbo].[Department] AS d
+    LEFT JOIN [Updated_FCW_List].[dbo].[Department] AS d
         ON e.[DepartmentID] = d.[DepartmentID]
     $whereConditions
     ORDER BY e.[Passport Expiry Date] ASC
@@ -68,7 +69,7 @@ $sql = "
     FETCH NEXT $records_per_page ROWS ONLY;
 ";
 
-$stmt = sqlsrv_query($conn1, $sql);
+$stmt = sqlsrv_query($conn2, $sql);
 
 if ($stmt === false) {
     die(print_r(sqlsrv_errors(), true));
@@ -77,12 +78,12 @@ if ($stmt === false) {
 // Get all distinct nationalities for the dropdown
 $nationality_sql = "
     SELECT DISTINCT n.[Nationality]
-    FROM [FCW_List].[dbo].[Nationality] AS n
-    INNER JOIN [FCW_List].[dbo].[Employee] AS e ON e.[NationalityID] = n.[NationalityID]
+    FROM [Updated_FCW_List].[dbo].[Nationality] AS n
+    INNER JOIN [Updated_FCW_List].[dbo].[Employee] AS e ON e.[NationalityID] = n.[NationalityID]
     WHERE n.[Nationality] IS NOT NULL
     ORDER BY n.[Nationality] ASC
 ";
-$nationality_stmt = sqlsrv_query($conn1, $nationality_sql);
+$nationality_stmt = sqlsrv_query($conn2, $nationality_sql);
 $nationalities = [];
 if ($nationality_stmt) {
     while ($nat_row = sqlsrv_fetch_array($nationality_stmt, SQLSRV_FETCH_ASSOC)) {

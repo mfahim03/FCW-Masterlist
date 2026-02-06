@@ -128,13 +128,15 @@ body {
   padding: 30px 40px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   width: 100%;
   box-sizing: border-box;
+  position: relative;
 }
 
 .header p {
   margin: 0;
+  position: absolute;
   font-size: 1.8rem;
   font-weight: 600;
   text-align: center;
@@ -147,6 +149,7 @@ body {
   text-decoration: none;
   padding: 10px 15px;
   border-radius: 6px;
+  margin-left: auto;
   font-size: 0.9rem;
   transition: transform 0.2s, box-shadow 0.2s;
   box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.1), 0 1px 0 rgba(255, 255, 255, 0.1);
@@ -170,7 +173,7 @@ table {
 }
 
 th, td {
-  padding: 12px 10px;
+  padding: 15px 10px;
   text-align: center;
   font-size: 0.95rem;
 }
@@ -484,34 +487,6 @@ footer {
     background-color: white;
 }
 
-/* Download Button as Pill */
-.download-btn-pill {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #218838;
-    padding: 8px 20px;
-    border-radius: 25px;
-    border: none;
-    color: white;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    white-space: nowrap;
-    backdrop-filter: blur(10px);
-}
-
-.download-btn-pill:hover {
-    background: #218838;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.download-btn-pill:active {
-    transform: translateY(0);
-}
-
 .download-btn-pill i {
     font-size: 14px;
 }
@@ -524,4 +499,30 @@ footer {
 
 .filter-icon {
     font-size: 14px;
+}
+
+.download-btn-pill {
+display: flex;
+align-items: center;
+gap: 10px;
+background: linear-gradient(135deg, #28a745, #218838);
+color: white;
+border: none;
+padding: 13px 25px;
+border-radius: 25px;
+font-size: 14px;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.3s ease;
+box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.download-btn-pill:hover {
+background: linear-gradient(135deg, #218838, #1e7e34);
+box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+transform: translateY(-1px);
+}
+
+.download-btn-pill:active {
+transform: translateY(0);
 }

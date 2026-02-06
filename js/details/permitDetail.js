@@ -1,9 +1,15 @@
-    let permitDeptChart = null;
-    let permitNatChart = null;
-    let permitMonthlyChart = null;
+let permitDeptChart = null;
+let permitNatChart = null;
+let permitMonthlyChart = null;
 
 // Show permit detail view
 function showPermitDetail(status) {
+    // Check if the card has data (is clickable)
+    const card = event?.target?.closest('.stat-card');
+    if (card && !card.classList.contains('clickable')) {
+        return; // Don't proceed if card is not clickable
+    }
+    
     const mainHeader = document.getElementById('permit-main-header');
     const mainContent = document.getElementById('permit-main-content');
     const detailView = document.getElementById('permit-detail-view');
@@ -32,6 +38,67 @@ function showPermitDetail(status) {
         behavior: 'smooth', 
         block: 'start' 
     });
+}
+
+// Update permit card interactivity based on data availability
+function updatePermitCardInteractivity() {
+    // Get the stat cards
+    const expiredCard = document.querySelector('#permit-main-content .stat-card.expired');
+    const expiringCard = document.querySelector('#permit-main-content .stat-card.expiring');
+    const activeCard = document.querySelector('#permit-main-content .stat-card.completed');
+    
+    // Get the counts from PHP
+    const expiredCount = expiredCard?.querySelector('.stat-number')?.textContent.replace(/,/g, '') || '0';
+    const expiringCount = expiringCard?.querySelector('.stat-number')?.textContent.replace(/,/g, '') || '0';
+    const activeCount = activeCard?.querySelector('.stat-number')?.textContent.replace(/,/g, '') || '0';
+    
+    // Update expired card
+    if (expiredCard) {
+        if (parseInt(expiredCount) === 0) {
+            expiredCard.classList.remove('clickable');
+            expiredCard.style.cursor = 'default';
+            expiredCard.style.opacity = '0.9';
+            expiredCard.onclick = null;
+            const small = expiredCard.querySelector('small');
+            if (small) small.textContent = 'No data available';
+        } else {
+            expiredCard.classList.add('clickable');
+            expiredCard.style.cursor = 'pointer';
+            expiredCard.style.opacity = '1';
+        }
+    }
+    
+    // Update expiring card
+    if (expiringCard) {
+        if (parseInt(expiringCount) === 0) {
+            expiringCard.classList.remove('clickable');
+            expiringCard.style.cursor = 'default';
+            expiringCard.style.opacity = '0.9';
+            expiringCard.onclick = null;
+            const small = expiringCard.querySelector('small');
+            if (small) small.textContent = 'No data available';
+        } else {
+            expiringCard.classList.add('clickable');
+            expiringCard.style.cursor = 'pointer';
+            expiringCard.style.opacity = '1';
+        }
+    }
+    
+    // Update active card
+    if (activeCard) {
+        if (parseInt(activeCount) === 0) {
+            activeCard.classList.remove('clickable');
+            activeCard.style.cursor = 'default';
+            activeCard.style.opacity = '0.9';
+            activeCard.onclick = null;
+            const small = activeCard.querySelector('small');
+            if (small) small.textContent = 'No data available';
+        } else {
+            activeCard.classList.add('clickable');
+            activeCard.style.cursor = 'pointer';
+            activeCard.style.opacity = '1';
+        }
+    }
 }
 
 // Hide permit detail view
@@ -127,9 +194,18 @@ function createDetailCharts(departmentData, nationalityData, monthlyData) {
     console.log('Creating charts with data:', { departmentData, nationalityData, monthlyData });
     
     // Destroy existing charts if they exist
-    if (permitDeptChart) permitDeptChart.destroy();
-    if (permitNatChart) permitNatChart.destroy();
-    if (permitMonthlyChart) permitMonthlyChart.destroy();
+    if (permitDeptChart) {
+        permitDeptChart.destroy();
+        permitDeptChart = null;
+    }
+    if (permitNatChart) {
+        permitNatChart.destroy();
+        permitNatChart = null;
+    }
+    if (permitMonthlyChart) {
+        permitMonthlyChart.destroy();
+        permitMonthlyChart = null;
+    }
     
     // Generate colors
     function generateColors(count) {
@@ -153,13 +229,14 @@ function createDetailCharts(departmentData, nationalityData, monthlyData) {
     }
     
     // Department Chart
-    const deptContainer = document.getElementById('permitDepartmentChart')?.parentElement;
+    let deptContainer = document.getElementById('permitDepartmentChart')?.parentElement;
     if (!departmentData || departmentData.length === 0) {
         if (deptContainer) {
             deptContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-building"></i> Employees by Department</div><p style="text-align: center; padding: 40px; color: #999;"><i class="fa-solid fa-inbox"></i><br><br>No department data available</p>';
         }
     } else {
-        if (!document.getElementById('permitDepartmentChart') && deptContainer) {
+        deptContainer = document.getElementById('permitDepartmentChart')?.parentElement;
+        if (deptContainer) {
             deptContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-building"></i> Employees by Department</div><canvas id="permitDepartmentChart"></canvas>';
         }
         
@@ -214,7 +291,8 @@ function createDetailCharts(departmentData, nationalityData, monthlyData) {
             });
             
             const totalDept = deptCounts.reduce((a, b) => a + b, 0);
-            const deptTitle = deptContainer.querySelector('.chart-title');
+            const currentDeptContainer = document.getElementById('permitDepartmentChart')?.parentElement;
+            const deptTitle = currentDeptContainer?.querySelector('.chart-title');
             if (deptTitle) {
                 deptTitle.innerHTML = `<i class="fa-solid fa-building"></i> Employees by Department <small style="opacity: 0.7;">(Total: ${totalDept})</small>`;
             }
@@ -222,13 +300,14 @@ function createDetailCharts(departmentData, nationalityData, monthlyData) {
     }
     
     // Nationality Chart
-    const natContainer = document.getElementById('permitNationalityChart')?.parentElement;
+    let natContainer = document.getElementById('permitNationalityChart')?.parentElement;
     if (!nationalityData || nationalityData.length === 0) {
         if (natContainer) {
             natContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-globe"></i> Employees by Nationality</div><p style="text-align: center; padding: 40px; color: #999;"><i class="fa-solid fa-inbox"></i><br><br>No nationality data available</p>';
         }
     } else {
-        if (!document.getElementById('permitNationalityChart') && natContainer) {
+        natContainer = document.getElementById('permitNationalityChart')?.parentElement;
+        if (natContainer) {
             natContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-globe"></i> Employees by Nationality</div><canvas id="permitNationalityChart"></canvas>';
         }
         
@@ -283,7 +362,8 @@ function createDetailCharts(departmentData, nationalityData, monthlyData) {
             });
             
             const totalNat = natCounts.reduce((a, b) => a + b, 0);
-            const natTitle = natContainer.querySelector('.chart-title');
+            const currentNatContainer = document.getElementById('permitNationalityChart')?.parentElement;
+            const natTitle = currentNatContainer?.querySelector('.chart-title');
             if (natTitle) {
                 natTitle.innerHTML = `<i class="fa-solid fa-globe"></i> Employees by Nationality <small style="opacity: 0.7;">(Total: ${totalNat})</small>`;
             }
@@ -291,7 +371,7 @@ function createDetailCharts(departmentData, nationalityData, monthlyData) {
     }
     
     // Monthly Breakdown Bar Chart
-    const monthlyContainer = document.getElementById('permitMonthlyChart')?.parentElement;
+    let monthlyContainer = document.getElementById('permitMonthlyChart')?.parentElement;
     if (!monthlyData || monthlyData.length === 0) {
         if (monthlyContainer) {
             const statusTitles = {
@@ -303,7 +383,8 @@ function createDetailCharts(departmentData, nationalityData, monthlyData) {
             monthlyContainer.innerHTML = `<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> ${statusText} - Monthly Breakdown</div><p style="text-align: center; padding: 40px; color: #999;"><i class="fa-solid fa-inbox"></i><br><br>No monthly data available</p>`;
         }
     } else {
-        if (!document.getElementById('permitMonthlyChart') && monthlyContainer) {
+        monthlyContainer = document.getElementById('permitMonthlyChart')?.parentElement;
+        if (monthlyContainer) {
             const statusTitles = {
                 'expired': 'Expired Permits',
                 'expiring': 'Expiring Soon Permits',
@@ -364,7 +445,8 @@ function createDetailCharts(departmentData, nationalityData, monthlyData) {
             });
             
             const totalMonthly = monthlyCounts.reduce((a, b) => a + b, 0);
-            const monthlyTitle = monthlyContainer.querySelector('.chart-title');
+            const currentMonthlyContainer = document.getElementById('permitMonthlyChart')?.parentElement;
+            const monthlyTitle = currentMonthlyContainer?.querySelector('.chart-title');
             if (monthlyTitle) {
                 const statusTitles = {
                     'expired': 'Expired Permits',
@@ -379,3 +461,8 @@ function createDetailCharts(departmentData, nationalityData, monthlyData) {
     
     console.log('All charts created successfully');
 }
+
+// Call this function when the page loads to set initial card states
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(updatePermitCardInteractivity, 100);
+});

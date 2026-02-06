@@ -24,8 +24,8 @@ if ($contract === 'extend') {
 // Query for department breakdown
 $deptSQL = "
     SELECT d.[Department], COUNT(*) as count
-    FROM [FCW_List].[dbo].[Employee] AS e
-    LEFT JOIN [FCW_List].[dbo].[Department] AS d ON e.[DepartmentID] = d.[DepartmentID]
+    FROM [Updated_FCW_List].[dbo].[Employee] AS e
+    LEFT JOIN [Updated_FCW_List].[dbo].[Department] AS d ON e.[DepartmentID] = d.[DepartmentID]
     $whereClause AND d.[Department] IS NOT NULL
     GROUP BY d.[Department]
     ORDER BY count DESC
@@ -34,8 +34,8 @@ $deptSQL = "
 // Query for nationality breakdown
 $natSQL = "
     SELECT n.[Nationality], COUNT(*) as count
-    FROM [FCW_List].[dbo].[Employee] AS e
-    LEFT JOIN [FCW_List].[dbo].[Nationality] AS n ON e.[NationalityID] = n.[NationalityID]
+    FROM [Updated_FCW_List].[dbo].[Employee] AS e
+    LEFT JOIN [Updated_FCW_List].[dbo].[Nationality] AS n ON e.[NationalityID] = n.[NationalityID]
     $whereClause AND n.[Nationality] IS NOT NULL
     GROUP BY n.[Nationality]
     ORDER BY count DESC
@@ -48,16 +48,16 @@ $monthlySQL = "
         YEAR(e.[Work Permit Expiry (New)]) as year,
         MONTH(e.[Work Permit Expiry (New)]) as month,
         COUNT(*) as count
-    FROM [FCW_List].[dbo].[Employee] AS e
+    FROM [Updated_FCW_List].[dbo].[Employee] AS e
     $whereClause
     GROUP BY FORMAT(e.[Work Permit Expiry (New)], 'MMM yyyy'), YEAR(e.[Work Permit Expiry (New)]), MONTH(e.[Work Permit Expiry (New)])
     ORDER BY year, month
 ";
 
 // Execute queries
-$deptStmt = sqlsrv_query($conn1, $deptSQL);
-$natStmt = sqlsrv_query($conn1, $natSQL);
-$monthlyStmt = sqlsrv_query($conn1, $monthlySQL);
+$deptStmt = sqlsrv_query($conn2, $deptSQL);
+$natStmt = sqlsrv_query($conn2, $natSQL);
+$monthlyStmt = sqlsrv_query($conn2, $monthlySQL);
 
 if ($deptStmt === false || $natStmt === false || $monthlyStmt === false) {
     echo json_encode(['success' => false, 'error' => 'Query execution failed', 'details' => sqlsrv_errors()]);

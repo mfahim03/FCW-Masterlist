@@ -5,6 +5,12 @@ let passportMonthlyChart = null;
 
 // Show passport detail view
 function showPassportDetail(status) {
+    // Check if the card has data (is clickable)
+    const card = event?.target?.closest('.stat-card');
+    if (card && !card.classList.contains('clickable')) {
+        return; // Don't proceed if card is not clickable
+    }
+    
     const mainHeader = document.getElementById('passport-main-header');
     const mainContent = document.getElementById('passport-main-content');
     const detailView = document.getElementById('passport-detail-view');
@@ -33,6 +39,67 @@ function showPassportDetail(status) {
         behavior: 'smooth', 
         block: 'start' 
     });
+}
+
+// Update passport card interactivity based on data availability
+function updatePassportCardInteractivity() {
+    // Get the stat cards
+    const expiredCard = document.querySelector('#passport-main-content .stat-card.expired');
+    const expiringCard = document.querySelector('#passport-main-content .stat-card.expiring');
+    const activeCard = document.querySelector('#passport-main-content .stat-card.completed');
+    
+    // Get the counts from PHP
+    const expiredCount = expiredCard?.querySelector('.stat-number')?.textContent.replace(/,/g, '') || '0';
+    const expiringCount = expiringCard?.querySelector('.stat-number')?.textContent.replace(/,/g, '') || '0';
+    const activeCount = activeCard?.querySelector('.stat-number')?.textContent.replace(/,/g, '') || '0';
+    
+    // Update expired card
+    if (expiredCard) {
+        if (parseInt(expiredCount) === 0) {
+            expiredCard.classList.remove('clickable');
+            expiredCard.style.cursor = 'default';
+            expiredCard.style.opacity = '0.9';
+            expiredCard.onclick = null;
+            const small = expiredCard.querySelector('small');
+            if (small) small.textContent = 'No data available';
+        } else {
+            expiredCard.classList.add('clickable');
+            expiredCard.style.cursor = 'pointer';
+            expiredCard.style.opacity = '1';
+        }
+    }
+    
+    // Update expiring card
+    if (expiringCard) {
+        if (parseInt(expiringCount) === 0) {
+            expiringCard.classList.remove('clickable');
+            expiringCard.style.cursor = 'default';
+            expiringCard.style.opacity = '0.9';
+            expiringCard.onclick = null;
+            const small = expiringCard.querySelector('small');
+            if (small) small.textContent = 'No data available';
+        } else {
+            expiringCard.classList.add('clickable');
+            expiringCard.style.cursor = 'pointer';
+            expiringCard.style.opacity = '1';
+        }
+    }
+    
+    // Update active card
+    if (activeCard) {
+        if (parseInt(activeCount) === 0) {
+            activeCard.classList.remove('clickable');
+            activeCard.style.cursor = 'default';
+            activeCard.style.opacity = '0.9';
+            activeCard.onclick = null;
+            const small = activeCard.querySelector('small');
+            if (small) small.textContent = 'No data available';
+        } else {
+            activeCard.classList.add('clickable');
+            activeCard.style.cursor = 'pointer';
+            activeCard.style.opacity = '1';
+        }
+    }
 }
 
 // Hide passport detail view
@@ -402,3 +469,9 @@ function createPassportDetailCharts(departmentData, nationalityData, monthlyData
     
     console.log('All passport charts created successfully');
 }
+
+// Call this function when the page loads to set initial card states
+document.addEventListener('DOMContentLoaded', function() {
+    // Small delay to ensure PHP content is loaded
+    setTimeout(updatePassportCardInteractivity, 100);
+});

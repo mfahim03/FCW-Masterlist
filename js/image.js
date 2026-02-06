@@ -1,5 +1,3 @@
-let selectedEmployeeId = null;
-let selectedEmployeeName = null;
 const contextMenu = document.getElementById('contextMenu');
 
 // Image preview functionality

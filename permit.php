@@ -4,15 +4,223 @@ include 'config/fetchPermit.php';
 include 'mail/permitExpiry.php';
 session_start();
 
-if (!isset($_SESSION['username'])) {
-    header("Location: login.php");
+if (!isset($_SESSION['username']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header("Location: indexView.php");
     exit;
 }
 
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    // If not admin, redirect to user view
-    header("Location: permitView.php");
-    exit;
+// === CHECK FOR EXPIRING WORK PERMITS AND SEND ALERT ===
+$sendAlert = false;
+
+// Check when we last sent an alert
+$checkQuery = "
+    SELECT TOP 1 SentAt 
+    FROM EmailAlertLog 
+    WHERE AlertType = 'PermitExpiry' 
+    ORDER BY SentAt DESC
+";
+
+$checkStmt = sqlsrv_query($conn2, $checkQuery);
+
+if ($checkStmt === false) {
+    // Table doesn't exist or query failed - need to create table
+    error_log("EmailAlertLog table might not exist. Creating it...");
+    
+    $createTableSQL = "
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='EmailAlertLog' AND xtype='U')
+        CREATE TABLE EmailAlertLog (
+            ID INT IDENTITY(1,1) PRIMARY KEY,
+            AlertType VARCHAR(50) NOT NULL,
+            SentAt DATETIME NOT NULL DEFAULT GETDATE(),
+            EmailCount INT NOT NULL
+        )
+    ";
+    
+    $createResult = sqlsrv_query($conn2, $createTableSQL);
+    if ($createResult) {
+        error_log("✓ EmailAlertLog table created");
+        $sendAlert = true; // First time - send alert
+    } else {
+        error_log("✗ Failed to create EmailAlertLog table: " . print_r(sqlsrv_errors(), true));
+        $sendAlert = false;
+    }
+} else {
+    $lastAlertRow = sqlsrv_fetch_array($checkStmt, SQLSRV_FETCH_ASSOC);
+    
+    if ($lastAlertRow) {
+        $lastAlertTime = $lastAlertRow['SentAt'];
+        
+        if ($lastAlertTime instanceof DateTime) {
+            $now = new DateTime();
+            $interval = $now->diff($lastAlertTime);
+            
+            // Calculate total days
+            $daysSinceLastAlert = $interval->days;
+            
+            error_log("Last alert sent: " . $lastAlertTime->format('Y-m-d H:i:s'));
+            error_log("Days since last alert: $daysSinceLastAlert");
+            
+            // Send if more than 7 days have passed
+            if ($daysSinceLastAlert >= 14) {
+                $sendAlert = true;
+                error_log("Will send alert - 7+ days have passed");
+            } else {
+                error_log("Skipping alert - only $daysSinceLastAlert days since last alert");
+            }
+        }
+    } else {
+        // No records found - first time
+        $sendAlert = true;
+        error_log("No previous alerts found - will send first alert");
+    }
+    
+    sqlsrv_free_stmt($checkStmt);
+}
+
+if ($sendAlert) {
+    error_log("=== PREPARING TO SEND PERMIT EXPIRY ALERT ===");
+    
+    // === QUERY PERMITS EXPIRED OR EXPIRING IN 90 DAYS ===
+    $alertQuery = "
+        SELECT 
+            e.[Employee#],
+            e.[Permit Name],
+            d.[Department],
+            n.[Nationality],
+            e.[Work Permit Number],
+            e.[Work Permit Expiry (New)],
+            e.[MedicalDate],
+            e.[SPIKPA Expiry ]
+        FROM [Updated_FCW_List].[dbo].[Employee] AS e
+        LEFT JOIN [Updated_FCW_List].[dbo].[Department] AS d
+            ON e.[DepartmentID] = d.[DepartmentID]
+        LEFT JOIN [Updated_FCW_List].[dbo].[Nationality] AS n
+            ON e.[NationalityID] = n.[NationalityID]
+        WHERE e.[Work Permit Expiry (New)] IS NOT NULL
+          AND CAST(e.[Work Permit Expiry (New)] AS DATE) <= CAST(DATEADD(DAY, 90, GETDATE()) AS DATE)
+        ORDER BY e.[Work Permit Expiry (New)] ASC
+    ";
+
+    $alertStmt = sqlsrv_query($conn2, $alertQuery);
+    $permitsExpiringSoon = [];
+
+    if ($alertStmt) {
+        while ($row = sqlsrv_fetch_array($alertStmt, SQLSRV_FETCH_ASSOC)) {
+            $expiryDate = $row['Work Permit Expiry (New)'];
+
+            if ($expiryDate instanceof DateTime) {
+                $today = new DateTime();
+                $today->setTime(0,0,0);
+
+                $expiryCompare = clone $expiryDate;
+                $expiryCompare->setTime(0,0,0);
+
+                $interval = $today->diff($expiryCompare);
+
+                if ($expiryCompare < $today) {
+                    $permitStatus = 'Expired';
+                } else {
+                    $permitStatus = 'Expiring Soon (' . $interval->days . ' days)';
+                }
+
+                // === MEDICAL STATUS LOGIC ===
+                $medicalDate = $row['MedicalDate'];
+                $medicalStatus = 'Incomplete';
+                $medicalCheckupDate = null;
+
+                if ($medicalDate instanceof DateTime) {
+                    $medicalCheckupDate = $medicalDate;
+                    $medicalStatus = 'Complete';
+                } else if (is_string($medicalDate)) {
+                    if ($medicalDate === 'Complete') {
+                        $medicalStatus = 'Complete';
+                    } else if ($medicalDate === 'Incomplete') {
+                        $medicalStatus = 'Incomplete';
+                    } else {
+                        try {
+                            $medicalCheckupDate = new DateTime($medicalDate);
+                            $medicalStatus = 'Complete';
+                        } catch (Exception $e) {
+                            $medicalStatus = 'Incomplete';
+                        }
+                    }
+                }
+
+                if ($medicalStatus === 'Complete' && $medicalCheckupDate !== null) {
+                    $medicalAge = $today->diff($medicalCheckupDate);
+                    $daysUntilExpiry = $today->diff($expiryCompare);
+                    
+                    if ($medicalAge->days > 335 && ($expiryCompare < $today || $daysUntilExpiry->days <= 90)) {
+                        $medicalStatus = 'Incomplete';
+                    } else if ($medicalAge->days > 335 && $daysUntilExpiry->days > 335 && $expiryCompare > $today) {
+                        $previousPermitDate = clone $expiryCompare;
+                        $previousPermitDate->modify('-1 year');
+                        if ($medicalCheckupDate < $previousPermitDate) {
+                            $medicalStatus = 'Incomplete';
+                        }
+                    } else if ($medicalAge->days > 335) {
+                        $medicalStatus = 'Incomplete';
+                    }
+                }
+
+                // === INSURANCE STATUS ===
+                $insuranceExpiry = $row['SPIKPA Expiry '];
+                $insuranceStatus = 'Invalid';
+                
+                if ($insuranceExpiry instanceof DateTime) {
+                    $insuranceCompare = clone $insuranceExpiry;
+                    $insuranceCompare->setTime(0,0,0);
+                    
+                    if ($insuranceCompare >= $today) {
+                        $insuranceStatus = 'Valid';
+                    } else {
+                        $insuranceStatus = 'Expired';
+                    }
+                }
+
+                $permitsExpiringSoon[] = [
+                    'employee_no'      => $row['Employee#'] ?? 'N/A',
+                    'name'             => $row['Permit Name'] ?? 'N/A',
+                    'department'       => $row['Department'] ?? 'N/A',
+                    'nationality'      => $row['Nationality'] ?? 'N/A',
+                    'permit_no'        => $row['Work Permit Number'] ?? 'N/A',
+                    'expiry_date'      => $expiryDate->format('d-m-Y'),
+                    'medical_status'   => $medicalStatus,
+                    'insurance_status' => $insuranceStatus,
+                    'permit_status'    => $permitStatus
+                ];
+            }
+        }
+        sqlsrv_free_stmt($alertStmt);
+    }
+
+    // === SEND EMAIL ===
+    if (!empty($permitsExpiringSoon)) {
+        error_log("Found " . count($permitsExpiringSoon) . " permits expiring soon");
+        
+        if (sendPermitExpiryAlert($permitsExpiringSoon)) {
+            // ✓ EMAIL SENT - LOG TO DATABASE
+            $insertQuery = "
+                INSERT INTO EmailAlertLog (AlertType, SentAt, EmailCount) 
+                VALUES ('PermitExpiry', GETDATE(), ?)
+            ";
+            
+            $params = [count($permitsExpiringSoon)];
+            $insertStmt = sqlsrv_query($conn2, $insertQuery, $params);
+            
+            if ($insertStmt) {
+                error_log("✓ Email sent successfully and logged to database");
+            } else {
+                error_log("✗ Email sent but failed to log to database: " . print_r(sqlsrv_errors(), true));
+            }
+        } else {
+            error_log("✗ Failed to send email");
+        }
+    } else {
+        error_log("No permits expiring within 90 days");
+    }
+} else {
+    error_log("Email alert skipped - not enough time since last alert");
 }
 ?>
 
@@ -123,32 +331,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
             background-color: white;
         }
 
-        .download-btn-pill {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: linear-gradient(135deg, #28a745, #218838);
-            color: white;
-            border: none;
-            padding: 13px 25px;
-            border-radius: 25px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
-        }
-
-        .download-btn-pill:hover {
-            background: linear-gradient(135deg, #218838, #1e7e34);
-            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
-            transform: translateY(-1px);
-        }
-
-        .download-btn-pill:active {
-            transform: translateY(0);
-        }
-
         .filter-icon {
             font-size: 14px;
         }
@@ -256,26 +438,22 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
                 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                     $hasData = true;
 
-                // === Work Permit Expiry Status ===
                 $expiryDate = $row['Work Permit Expiry (New)'];
                 $permitStatus = 'Active';
                 $permitStatusClass = 'status-active';
 
                 if ($expiryDate instanceof DateTime) {
                     $today = new DateTime();
-                    // Reset time components to midnight for accurate date-only comparison
                     $today->setTime(0, 0, 0);
                     $expiryDateCompare = clone $expiryDate;
                     $expiryDateCompare->setTime(0, 0, 0);
                     
                     $interval = $today->diff($expiryDateCompare);
                     
-                    // Expired = expiry date is BEFORE today (not including today)
                     if ($expiryDateCompare < $today) {
                         $permitStatus = 'Expired';
                         $permitStatusClass = 'status-expired';
                     } 
-                    // Expiring Soon = from today up to 90 days in the future
                     elseif ($interval->days <= 90 && $expiryDateCompare >= $today) {
                         $permitStatus = 'Expiring Soon';
                         $permitStatusClass = 'status-expiring';
@@ -291,14 +469,11 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
                     $permitStatusClass = '';
                 }
 
-                // === Medical Status Logic ===
                 $medicalDate = $row['MedicalDate'];
                 $medicalStatus = 'Incomplete';
                 $medicalCheckupDate = null;
 
-                // Parse the medical date field
                 if ($medicalDate instanceof DateTime) {
-                    // It's a date - medical was completed on this date
                     $medicalCheckupDate = $medicalDate;
                     $medicalStatus = 'Complete';
                 } else if (is_string($medicalDate)) {
@@ -307,7 +482,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
                     } else if ($medicalDate === 'Incomplete') {
                         $medicalStatus = 'Incomplete';
                     } else {
-                        // Try to parse as date string
                         try {
                             $medicalCheckupDate = new DateTime($medicalDate);
                             $medicalStatus = 'Complete';
@@ -317,33 +491,20 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
                     }
                 }
 
-                // Reset to Incomplete if medical checkup is older than 11 months (335 days)
-                // This applies to ALL cases, not just when permit is expiring/expired
                 if ($medicalStatus === 'Complete' && $medicalCheckupDate !== null && $expiryDate instanceof DateTime) {
                     $today = new DateTime();
                     $today->setTime(0, 0, 0);
                     
-                    // Calculate how old the medical checkup is
                     $medicalAge = $today->diff($medicalCheckupDate);
                     
-                    // Calculate time until permit expiry
                     $expiryDateCompare = clone $expiryDate;
                     $expiryDateCompare->setTime(0, 0, 0);
                     $daysUntilExpiry = $today->diff($expiryDateCompare);
                     
-                    // SCENARIO 1: Medical is old (>11 months) AND permit is expiring/expired
-                    // Need new medical for renewal
                     if ($medicalAge->days > 335 && ($permitStatus === 'Expired' || $permitStatus === 'Expiring Soon')) {
                         $medicalStatus = 'Incomplete';
                     }
-                    
-                    // SCENARIO 2: Medical is old (>11 months) AND permit was recently renewed
-                    // This catches cases where permit is "Active" but medical is outdated
-                    // If permit expiry is MORE THAN 11 months away, and medical is older than 11 months,
-                    // it means the permit was likely renewed without updating medical
                     else if ($medicalAge->days > 335 && $daysUntilExpiry->days > 335 && $expiryDateCompare > $today) {
-                        // Check if medical date is BEFORE the permit expiry minus 1 year
-                        // This indicates the medical is from the previous permit period
                         $previousPermitDate = clone $expiryDateCompare;
                         $previousPermitDate->modify('-1 year');
                         
@@ -351,9 +512,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
                             $medicalStatus = 'Incomplete';
                         }
                     }
-                    
-                    // SCENARIO 3: After renewal, if medical is older than permit's remaining validity
-                    // Medical should be recent (within last 11 months) for active permits
                     else if ($medicalAge->days > 335) {
                         $medicalStatus = 'Incomplete';
                     }
@@ -362,7 +520,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
                 $hasMedical = ($medicalStatus === 'Complete');
                 $medicalClass = $hasMedical ? 'medical-complete' : 'medical-incomplete';
 
-                    // === SPIKPA Expiry ===
                     $expiryDateIn = $row['SPIKPA Expiry '];
                     $expiryClassI = '';
                     if ($expiryDateIn instanceof DateTime) {
@@ -373,7 +530,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
                         
                         $interval = $today->diff($expiryDateInCompare);
                         
-                        // FIXED: Use proper date comparison
                         if ($expiryDateInCompare < $today) {
                             $expiryClassI = 'expired';
                         } elseif ($interval->days <= 90 && $expiryDateInCompare >= $today) {
@@ -384,7 +540,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
                         $expiryDateInFormatted = $expiryDateIn ? $expiryDateIn : 'N/A';
                     }
 
-                    // === Check if both requirements are complete ===
                     $hasInsurance = ($expiryDateIn && $expiryDateIn instanceof DateTime);
                     $isComplete = $hasMedical && $hasInsurance;
 
@@ -394,7 +549,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
                     echo "<td>" . htmlspecialchars($row['Department'] ?? 'N/A') . "</td>";
                     echo "<td>" . htmlspecialchars($row['Nationality'] ?? 'N/A') . "</td>";
                     
-                    // === Date of Birth ===
                     $birthdate = $row['Birthdate'];
                     if ($birthdate instanceof DateTime) {
                         $birthdateFormatted = $birthdate->format('d-m-Y');
@@ -405,9 +559,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
                     echo "<td>" . htmlspecialchars($row['Work Permit Number'] ?? 'N/A') . "</td>";
                     echo "<td>" . htmlspecialchars($expiryDateFormatted) . "</td>";
                     
-                    // === Medical Checkup Status with Update Button ===
                     echo "<td class='$medicalClass'>" . htmlspecialchars($medicalStatus);
-                    // Only show button if status is Incomplete
                     if ($medicalStatus === 'Incomplete') {
                         echo "<button class='status-btn' onclick='openMedicalModal(\"" . htmlspecialchars($row['Employee#']) . "\", \"" . htmlspecialchars($medicalStatus) . "\")'>";
                         echo "<i class='fa-solid fa-pencil'></i>";
@@ -416,8 +568,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
                     echo "</td>";
 
                     echo "<td class='$expiryClassI'>" . htmlspecialchars($expiryDateInFormatted) . "</td>";
-                    
-                    // === Work Permit Status (Expired/Expiring Soon/Active) ===
                     echo "<td class='$permitStatusClass'>" . $permitStatus . "</td>";
                     
                     echo "<td>";
@@ -519,7 +669,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     <script src="js/remarks.js"></script>
     <script src="js/medicalStatus.js"></script>
     <script>
-    // ===== LOGOUT CONFIRMATION =====
     document.querySelector('.logout-link').addEventListener('click', (e) => {
         e.preventDefault();
         if (confirm("Are you sure you want to log out?")) {
@@ -527,12 +676,11 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
         }
     });
 
-    // ===== FILTER FUNCTION =====
     function applyFilters() {
         const month = document.getElementById('monthFilter').value;
         const department = document.getElementById('departmentFilter').value;
         const status = document.getElementById('statusFilter').value;
-        const page = 1; // Reset to first page when filtering
+        const page = 1;
         
         let url = '?page=' + page;
         if (month != '0') {
@@ -548,7 +696,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
         window.location.href = url;
     }
 
-    // ===== DROPDOWN ARROW ANIMATION =====
     document.addEventListener('DOMContentLoaded', function() {
         const selects = document.querySelectorAll('.filter-pill select');
         
@@ -562,17 +709,14 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
             });
         });
 
-        // ===== EXPORT TO EXCEL FUNCTIONALITY (DIRECT DOWNLOAD) =====
         const downloadBtn = document.querySelector('.download-btn-pill');
         if (downloadBtn) {
             downloadBtn.addEventListener('click', function() {
-                // Get current filter values
                 const month = document.getElementById('monthFilter').value;
                 const department = document.getElementById('departmentFilter').value;
                 const status = document.getElementById('statusFilter').value;
                 
-                // Build export URL with filters
-                let exportUrl = 'exportPermitToExcel.php';
+                let exportUrl = 'excel/exportPermitToExcel.php';
                 let hasParams = false;
                 
                 if (month != '0' || department != 'all' || status != 'default') {
@@ -592,15 +736,12 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
                     }
                 }
                 
-                // Show loading state
                 const originalText = this.innerHTML;
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
                 this.disabled = true;
                 
-                // Direct download - most reliable and secure
                 window.location.href = exportUrl;
 
-                // Reset button after a delay
                 setTimeout(() => {
                     this.innerHTML = originalText;
                     this.disabled = false;
@@ -609,7 +750,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
         }
     });
         
-    // ===== RENEW BUTTON FUNCTION =====
     document.querySelectorAll('.renew-btn:not([disabled])').forEach(button => {
         button.addEventListener('click', () => {
             const id = button.getAttribute('data-id');

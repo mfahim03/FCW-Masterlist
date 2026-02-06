@@ -16,7 +16,7 @@ if ($conn1 === false) {
 
 $serverName2 = "MAJ-S-02370\HRSQL"; // SQL Server name
 $connectionOptions2 = [
-    "Database" => "EmployeeMasterList", // SQL Database name
+    "Database" => "Updated_FCW_List", // SQL Database name
     "Uid" => "sa",
     "PWD" => "Alsecure@1#",// Alsecure@1#
     "TrustServerCertificate" => true // helps avoid SSL cert issues sometimes

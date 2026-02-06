@@ -18,12 +18,12 @@ $employeeNo = $_POST['employeeNo'];
 $remarks = $_POST['remarks'];
 
 // Update remarks in database
-$sql = "UPDATE [FCW_List].[dbo].[Employee] 
+$sql = "UPDATE [Updated_FCW_List].[dbo].[Employee] 
         SET [Remarks] = ? 
         WHERE [Employee#] = ?";
 
 $params = array($remarks, $employeeNo);
-$stmt = sqlsrv_query($conn1, $sql, $params);
+$stmt = sqlsrv_query($conn2, $sql, $params);
 
 if ($stmt === false) {
     error_log(print_r(sqlsrv_errors(), true));

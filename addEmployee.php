@@ -2,11 +2,6 @@
 include 'db.php';
 session_start();
 
-if (!isset($_SESSION['username'])) {
-    header("Location: login.php");
-    exit;
-}
-
 if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     // If not admin, redirect to user view
     header("Location: indexView.php");
@@ -19,8 +14,8 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
 $employeeData = []; // Initialize to prevent errors if not fetching
 
 // Fetch all nationalities for dropdown
-$nationality_sql = "SELECT [NationalityID], [Nationality] FROM [FCW_List].[dbo].[Nationality] ORDER BY [Nationality]";
-$nationality_stmt = sqlsrv_query($conn1, $nationality_sql);
+$nationality_sql = "SELECT [NationalityID], [Nationality] FROM [Updated_FCW_List].[dbo].[Nationality] ORDER BY [Nationality]";
+$nationality_stmt = sqlsrv_query($conn2, $nationality_sql);
 $nationalities = [];
 if ($nationality_stmt !== false) {
     while ($nat = sqlsrv_fetch_array($nationality_stmt, SQLSRV_FETCH_ASSOC)) {
@@ -31,8 +26,8 @@ if ($nationality_stmt !== false) {
 }
 
 // Fetch all department for dropdown
-$department_sql = "SELECT [DepartmentID], [Department] FROM [FCW_List].[dbo].[Department] ORDER BY [Department]";
-$department_stmt = sqlsrv_query($conn1, $department_sql);
+$department_sql = "SELECT [DepartmentID], [Department] FROM [Updated_FCW_List].[dbo].[Department] ORDER BY [Department]";
+$department_stmt = sqlsrv_query($conn2, $department_sql);
 $departments = [];
 if ($department_stmt !== false) {
     while ($dept = sqlsrv_fetch_array($department_stmt, SQLSRV_FETCH_ASSOC)) {
@@ -44,8 +39,8 @@ if ($department_stmt !== false) {
 
 // Fetch all unique contract types for dropdown
 $contracts = [];
-$contract_sql = "SELECT DISTINCT [Contract] FROM [FCW_List].[dbo].[Employee] WHERE [Contract] IS NOT NULL";
-$contract_stmt = sqlsrv_query($conn1, $contract_sql);
+$contract_sql = "SELECT DISTINCT [Contract] FROM [Updated_FCW_List].[dbo].[Employee] WHERE [Contract] IS NOT NULL";
+$contract_stmt = sqlsrv_query($conn2, $contract_sql);
 
 if ($contract_stmt !== false) {
     while ($row = sqlsrv_fetch_array($contract_stmt, SQLSRV_FETCH_ASSOC)) {

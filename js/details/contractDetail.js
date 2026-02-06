@@ -5,6 +5,12 @@ let contractMonthlyChart = null;
 
 // Show contract detail view
 function showContractDetail(contract) {
+    // Check if the card has data (is clickable)
+    const card = event?.target?.closest('.stat-card');
+    if (card && !card.classList.contains('clickable')) {
+        return; // Don't proceed if card is not clickable
+    }
+    
     const mainHeader = document.getElementById('contract-main-header');
     const mainContent = document.getElementById('contract-main-content');
     const detailView = document.getElementById('contract-detail-view');
@@ -30,6 +36,49 @@ function showContractDetail(contract) {
         behavior: 'smooth', 
         block: 'start' 
     });
+}
+
+// Update contract card interactivity based on data availability
+function updateContractCardInteractivity() {
+    // Get the stat cards
+    const extendCard = document.querySelector('#contract-main-content .stat-card.completed');
+    const notExtendCard = document.querySelector('#contract-main-content .stat-card.expired');
+    
+    // Get the counts from PHP
+    const extendCount = extendCard?.querySelector('.stat-number')?.textContent.replace(/,/g, '') || '0';
+    const notExtendCount = notExtendCard?.querySelector('.stat-number')?.textContent.replace(/,/g, '') || '0';
+    
+    // Update extend card
+    if (extendCard) {
+        if (parseInt(extendCount) === 0) {
+            extendCard.classList.remove('clickable');
+            extendCard.style.cursor = 'default';
+            extendCard.style.opacity = '0.9';
+            extendCard.onclick = null;
+            const small = extendCard.querySelector('small');
+            if (small) small.textContent = 'No data available';
+        } else {
+            extendCard.classList.add('clickable');
+            extendCard.style.cursor = 'pointer';
+            extendCard.style.opacity = '1';
+        }
+    }
+    
+    // Update not extend card
+    if (notExtendCard) {
+        if (parseInt(notExtendCount) === 0) {
+            notExtendCard.classList.remove('clickable');
+            notExtendCard.style.cursor = 'default';
+            notExtendCard.style.opacity = '0.9';
+            notExtendCard.onclick = null;
+            const small = notExtendCard.querySelector('small');
+            if (small) small.textContent = 'No data available';
+        } else {
+            notExtendCard.classList.add('clickable');
+            notExtendCard.style.cursor = 'pointer';
+            notExtendCard.style.opacity = '1';
+        }
+    }
 }
 
 // Hide contract detail view
@@ -125,9 +174,18 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
     console.log('Creating contract charts with data:', { departmentData, nationalityData, monthlyData });
     
     // Destroy existing charts if they exist
-    if (contractDeptChart) contractDeptChart.destroy();
-    if (contractNatChart) contractNatChart.destroy();
-    if (contractMonthlyChart) contractMonthlyChart.destroy();
+    if (contractDeptChart) {
+        contractDeptChart.destroy();
+        contractDeptChart = null;
+    }
+    if (contractNatChart) {
+        contractNatChart.destroy();
+        contractNatChart = null;
+    }
+    if (contractMonthlyChart) {
+        contractMonthlyChart.destroy();
+        contractMonthlyChart = null;
+    }
     
     // Generate colors
     function generateColors(count) {
@@ -151,13 +209,14 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
     }
     
     // Department Chart
-    const deptContainer = document.getElementById('contractDepartmentChart')?.parentElement;
+    let deptContainer = document.getElementById('contractDepartmentChart')?.parentElement;
     if (!departmentData || departmentData.length === 0) {
         if (deptContainer) {
             deptContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-building"></i> Employees by Department</div><p style="text-align: center; padding: 40px; color: #999;"><i class="fa-solid fa-inbox"></i><br><br>No department data available</p>';
         }
     } else {
-        if (!document.getElementById('contractDepartmentChart') && deptContainer) {
+        deptContainer = document.getElementById('contractDepartmentChart')?.parentElement;
+        if (deptContainer) {
             deptContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-building"></i> Employees by Department</div><canvas id="contractDepartmentChart"></canvas>';
         }
         
@@ -212,7 +271,8 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
             });
             
             const totalDept = deptCounts.reduce((a, b) => a + b, 0);
-            const deptTitle = deptContainer.querySelector('.chart-title');
+            const currentDeptContainer = document.getElementById('contractDepartmentChart')?.parentElement;
+            const deptTitle = currentDeptContainer?.querySelector('.chart-title');
             if (deptTitle) {
                 deptTitle.innerHTML = `<i class="fa-solid fa-building"></i> Employees by Department <small style="opacity: 0.7;">(Total: ${totalDept})</small>`;
             }
@@ -220,13 +280,14 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
     }
     
     // Nationality Chart
-    const natContainer = document.getElementById('contractNationalityChart')?.parentElement;
+    let natContainer = document.getElementById('contractNationalityChart')?.parentElement;
     if (!nationalityData || nationalityData.length === 0) {
         if (natContainer) {
             natContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-globe"></i> Employees by Nationality</div><p style="text-align: center; padding: 40px; color: #999;"><i class="fa-solid fa-inbox"></i><br><br>No nationality data available</p>';
         }
     } else {
-        if (!document.getElementById('contractNationalityChart') && natContainer) {
+        natContainer = document.getElementById('contractNationalityChart')?.parentElement;
+        if (natContainer) {
             natContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-globe"></i> Employees by Nationality</div><canvas id="contractNationalityChart"></canvas>';
         }
         
@@ -281,7 +342,8 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
             });
             
             const totalNat = natCounts.reduce((a, b) => a + b, 0);
-            const natTitle = natContainer.querySelector('.chart-title');
+            const currentNatContainer = document.getElementById('contractNationalityChart')?.parentElement;
+            const natTitle = currentNatContainer?.querySelector('.chart-title');
             if (natTitle) {
                 natTitle.innerHTML = `<i class="fa-solid fa-globe"></i> Employees by Nationality <small style="opacity: 0.7;">(Total: ${totalNat})</small>`;
             }
@@ -289,13 +351,14 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
     }
     
     // Monthly Breakdown Bar Chart
-    const monthlyContainer = document.getElementById('contractMonthlyChart')?.parentElement;
+    let monthlyContainer = document.getElementById('contractMonthlyChart')?.parentElement;
     if (!monthlyData || monthlyData.length === 0) {
         if (monthlyContainer) {
             monthlyContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> Monthly Breakdown by Permit Expiry</div><p style="text-align: center; padding: 40px; color: #999;"><i class="fa-solid fa-inbox"></i><br><br>No monthly data available</p>';
         }
     } else {
-        if (!document.getElementById('contractMonthlyChart') && monthlyContainer) {
+        monthlyContainer = document.getElementById('contractMonthlyChart')?.parentElement;
+        if (monthlyContainer) {
             monthlyContainer.innerHTML = '<div class="chart-title"><i class="fa-solid fa-calendar-alt"></i> Monthly Breakdown by Permit Expiry</div><canvas id="contractMonthlyChart"></canvas>';
         }
         
@@ -350,7 +413,8 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
             });
             
             const totalMonthly = monthlyCounts.reduce((a, b) => a + b, 0);
-            const monthlyTitle = monthlyContainer.querySelector('.chart-title');
+            const currentMonthlyContainer = document.getElementById('contractMonthlyChart')?.parentElement;
+            const monthlyTitle = currentMonthlyContainer?.querySelector('.chart-title');
             if (monthlyTitle) {
                 monthlyTitle.innerHTML = `<i class="fa-solid fa-calendar-alt"></i> Monthly Breakdown by Permit Expiry <small style="opacity: 0.7;">(Total: ${totalMonthly})</small>`;
             }
@@ -359,3 +423,8 @@ function createContractDetailCharts(departmentData, nationalityData, monthlyData
     
     console.log('All contract charts created successfully');
 }
+
+// Call this function when the page loads to set initial card states
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(updateContractCardInteractivity, 100);
+});

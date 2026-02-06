@@ -21,7 +21,7 @@ ob_clean();
 header('Content-Type: application/json; charset=utf-8');
 
 // Check if connection exists
-if (!isset($conn1) || $conn1 === false) {
+if (!isset($conn2) || $conn2 === false) {
     echo json_encode(['success' => false, 'error' => 'Database connection not available']);
     exit;
 }
@@ -59,8 +59,8 @@ $dept_sql = "
     SELECT 
         ISNULL(D.Department, 'Unknown') AS label,
         COUNT(E.[Employee#]) AS count
-    FROM [FCW_List].[dbo].[Employee] E
-    LEFT JOIN [FCW_List].[dbo].[Department] D ON E.DepartmentID = D.DepartmentID
+    FROM [Updated_FCW_List].[dbo].[Employee] E
+    LEFT JOIN [Updated_FCW_List].[dbo].[Department] D ON E.DepartmentID = D.DepartmentID
     WHERE E.[Work Permit Expiry (New)] IS NOT NULL 
     AND $whereClause
     GROUP BY D.Department
@@ -68,7 +68,7 @@ $dept_sql = "
 ";
 
 $department = [];
-$dept_stmt = sqlsrv_query($conn1, $dept_sql);
+$dept_stmt = sqlsrv_query($conn2, $dept_sql);
 
 if ($dept_stmt === false) {
     $errors = sqlsrv_errors();
@@ -78,7 +78,7 @@ if ($dept_stmt === false) {
         'sql_error' => $errors[0]['message'] ?? 'Unknown SQL error',
         'query' => $dept_sql
     ]);
-    if ($conn1) sqlsrv_close($conn1);
+    if ($conn2) sqlsrv_close($conn2);
     exit;
 }
 
@@ -95,8 +95,8 @@ $nat_sql = "
     SELECT 
         ISNULL(N.Nationality, 'Unknown') AS label,
         COUNT(E.[Employee#]) AS count
-    FROM [FCW_List].[dbo].[Employee] E
-    LEFT JOIN [FCW_List].[dbo].[Nationality] N ON E.NationalityID = N.NationalityID
+    FROM [Updated_FCW_List].[dbo].[Employee] E
+    LEFT JOIN [Updated_FCW_List].[dbo].[Nationality] N ON E.NationalityID = N.NationalityID
     WHERE E.[Work Permit Expiry (New)] IS NOT NULL 
     AND $whereClause
     GROUP BY N.Nationality
@@ -104,7 +104,7 @@ $nat_sql = "
 ";
 
 $nationality = [];
-$nat_stmt = sqlsrv_query($conn1, $nat_sql);
+$nat_stmt = sqlsrv_query($conn2, $nat_sql);
 
 if ($nat_stmt === false) {
     $errors = sqlsrv_errors();
@@ -114,7 +114,7 @@ if ($nat_stmt === false) {
         'sql_error' => $errors[0]['message'] ?? 'Unknown SQL error',
         'query' => $nat_sql
     ]);
-    if ($conn1) sqlsrv_close($conn1);
+    if ($conn2) sqlsrv_close($conn2);
     exit;
 }
 
@@ -133,7 +133,7 @@ $monthly_sql = "
         YEAR(E.[Work Permit Expiry (New)]) AS year_num,
         MONTH(E.[Work Permit Expiry (New)]) AS month_num,
         COUNT(E.[Employee#]) AS count
-    FROM [FCW_List].[dbo].[Employee] E
+    FROM [Updated_FCW_List].[dbo].[Employee] E
     WHERE E.[Work Permit Expiry (New)] IS NOT NULL 
     AND $whereClause
     GROUP BY 
@@ -144,7 +144,7 @@ $monthly_sql = "
 ";
 
 $monthly = [];
-$monthly_stmt = sqlsrv_query($conn1, $monthly_sql);
+$monthly_stmt = sqlsrv_query($conn2, $monthly_sql);
 
 if ($monthly_stmt === false) {
     $errors = sqlsrv_errors();
@@ -154,7 +154,7 @@ if ($monthly_stmt === false) {
         'sql_error' => $errors[0]['message'] ?? 'Unknown SQL error',
         'query' => $monthly_sql
     ]);
-    if ($conn1) sqlsrv_close($conn1);
+    if ($conn2) sqlsrv_close($conn2);
     exit;
 }
 
@@ -167,8 +167,8 @@ while ($row = sqlsrv_fetch_array($monthly_stmt, SQLSRV_FETCH_ASSOC)) {
 sqlsrv_free_stmt($monthly_stmt);
 
 // Close database connection
-if ($conn1) {
-    sqlsrv_close($conn1);
+if ($conn2) {
+    sqlsrv_close($conn2);
 }
 
 // Return successful JSON response with monthly data

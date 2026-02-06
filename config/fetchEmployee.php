@@ -1,5 +1,6 @@
 <?php
 // Get selected employee ID if provided
+// MedicalDate == Medical Status (complete/incomplete)
 $selectedEmployeeId = isset($_GET['id']) ? $_GET['id'] : null;
 $employeeData = null;
 $myName = '';
@@ -45,15 +46,15 @@ if ($selectedEmployeeId) {
             e.[MedicalDate],
             e.[ImagePath],
             n.[Nationality]
-        FROM [FCW_List].[dbo].[Employee] AS e
-        LEFT JOIN [FCW_List].[dbo].[Nationality] AS n
+        FROM [Updated_FCW_List].[dbo].[Employee] AS e
+        LEFT JOIN [Updated_FCW_List].[dbo].[Nationality] AS n
             ON e.[NationalityID] = n.[NationalityID]
-        LEFT JOIN [FCW_List].[dbo].[Department] AS d
+        LEFT JOIN [Updated_FCW_List].[dbo].[Department] AS d
             ON e.[DepartmentID] = d.[DepartmentID]
         WHERE e.[Employee#] = ?
     ";
     
-    $stmt = sqlsrv_query($conn1, $sql, array($selectedEmployeeId));
+    $stmt = sqlsrv_query($conn2, $sql, array($selectedEmployeeId));
     if ($stmt !== false) {
         $employeeData = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
         
@@ -80,8 +81,8 @@ if ($selectedEmployeeId) {
                         $imageFound = true;
                         
                         // Update database with found image path
-                        $update_sql = "UPDATE [FCW_List].[dbo].[Employee] SET [ImagePath] = ? WHERE [Employee#] = ?";
-                        $update_stmt = sqlsrv_query($conn1, $update_sql, array($photoPath, $employeeNum));
+                        $update_sql = "UPDATE [Updated_FCW_List].[dbo].[Employee] SET [ImagePath] = ? WHERE [Employee#] = ?";
+                        $update_stmt = sqlsrv_query($conn2, $update_sql, array($photoPath, $employeeNum));
                         if ($update_stmt === false) {
                             error_log("Error updating image path: " . print_r(sqlsrv_errors(), true));
                         }
@@ -101,8 +102,8 @@ if ($selectedEmployeeId) {
 }
 
 // Fetch all nationalities for dropdown
-$nationality_sql = "SELECT [NationalityID], [Nationality] FROM [FCW_List].[dbo].[Nationality] ORDER BY [Nationality]";
-$nationality_stmt = sqlsrv_query($conn1, $nationality_sql);
+$nationality_sql = "SELECT [NationalityID], [Nationality] FROM [Updated_FCW_List].[dbo].[Nationality] ORDER BY [Nationality]";
+$nationality_stmt = sqlsrv_query($conn2, $nationality_sql);
 $nationalities = [];
 if ($nationality_stmt !== false) {
     while ($nat = sqlsrv_fetch_array($nationality_stmt, SQLSRV_FETCH_ASSOC)) {
@@ -113,8 +114,8 @@ if ($nationality_stmt !== false) {
 }
 
 // Fetch all departments for dropdown
-$department_sql = "SELECT [DepartmentID], [Department] FROM [FCW_List].[dbo].[Department] ORDER BY [Department]";
-$department_stmt = sqlsrv_query($conn1, $department_sql);
+$department_sql = "SELECT [DepartmentID], [Department] FROM [Updated_FCW_List].[dbo].[Department] ORDER BY [Department]";
+$department_stmt = sqlsrv_query($conn2, $department_sql);
 $departments = [];
 if ($department_stmt !== false) {
     while ($dept = sqlsrv_fetch_array($department_stmt, SQLSRV_FETCH_ASSOC)) {
@@ -125,8 +126,8 @@ if ($department_stmt !== false) {
 }
 
 // Fetch all unique contract types for dropdown
-$contract_sql = "SELECT DISTINCT [Contract] FROM [FCW_List].[dbo].[Employee] WHERE [Contract] IS NOT NULL AND [Contract] <> '' ORDER BY [Contract]";
-$contract_stmt = sqlsrv_query($conn1, $contract_sql);
+$contract_sql = "SELECT DISTINCT [Contract] FROM [Updated_FCW_List].[dbo].[Employee] WHERE [Contract] IS NOT NULL AND [Contract] <> '' ORDER BY [Contract]";
+$contract_stmt = sqlsrv_query($conn2, $contract_sql);
 $contracts = [];
 if ($contract_stmt !== false) {
     while ($contract = sqlsrv_fetch_array($contract_stmt, SQLSRV_FETCH_ASSOC)) {
@@ -143,14 +144,14 @@ $list_sql = "
         e.[Name],
         d.[Department],
         n.[Nationality]
-    FROM [FCW_List].[dbo].[Employee] AS e
-    LEFT JOIN [FCW_List].[dbo].[Nationality] AS n
+    FROM [Updated_FCW_List].[dbo].[Employee] AS e
+    LEFT JOIN [Updated_FCW_List].[dbo].[Nationality] AS n
         ON e.[NationalityID] = n.[NationalityID]
-    LEFT JOIN [FCW_List].[dbo].[Department] AS d
+    LEFT JOIN [Updated_FCW_List].[dbo].[Department] AS d
         ON e.[DepartmentID] = d.[DepartmentID]
     ORDER BY e.[Employee#]
 ";
-$list_stmt = sqlsrv_query($conn1, $list_sql);
+$list_stmt = sqlsrv_query($conn2, $list_sql);
 
 if ($list_stmt === false) {
     error_log("Error fetching employee list: " . print_r(sqlsrv_errors(), true));

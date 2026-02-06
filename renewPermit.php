@@ -12,13 +12,13 @@ if (isset($_POST['id'])) {
 
     // Update Work Permit Expiry by adding 1 year AND Reset Medical Status to Incomplete
     $sql = "
-        UPDATE [FCW_List].[dbo].[Employee]
+        UPDATE [Updated_FCW_List].[dbo].[Employee]
         SET [Work Permit Expiry (New)] = DATEADD(year, 1, [Work Permit Expiry (New)]),
             [MedicalDate] = 'Incomplete'
         WHERE [Employee#] = ?
     ";
 
-    $stmt = sqlsrv_query($conn1, $sql, [$id]);
+    $stmt = sqlsrv_query($conn2, $sql, [$id]);
 
     if ($stmt) {
         echo "success";

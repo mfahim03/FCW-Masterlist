@@ -105,5 +105,28 @@
                 <i class="fa-solid fa-chevron-right"></i>
             </div>
         </div>
+
+        <!-- EOC/Runaway Card -->
+        <div class="dashboard-nav-card eoc-runaway-card" onclick="navigateToSection('eoc-runaway')">
+            <div class="card-icon">
+                <i class="fa-solid fa-user-xmark"></i>
+            </div>
+            <div class="card-content">
+                <h3>EOC/Runaway Overview</h3>
+                <div class="card-stats">
+                    <div class="card-stat eoc-stat">
+                        <span class="stat-value"><?php echo $eoc_summary['EOCCount']; ?></span>
+                        <span class="stat-label">EOC</span>
+                    </div>
+                    <div class="card-stat runaway-stat">
+                        <span class="stat-value"><?php echo $eoc_summary['RunawayCount']; ?></span>
+                        <span class="stat-label">Runaway</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-arrow">
+                <i class="fa-solid fa-chevron-right"></i>
+            </div>
+        </div>
     </div>
 </div>

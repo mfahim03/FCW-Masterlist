@@ -3,14 +3,8 @@ include 'db.php';
 include 'config/fetchContract.php';
 session_start();
 
-if (!isset($_SESSION['username'])) {
-    header("Location: login.php");
-    exit;
-}
-
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    // If not admin, redirect to user view
-    header("Location: contractView.php");
+if (!isset($_SESSION['username']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header("Location: indexView.php");
     exit;
 }
 ?>
@@ -146,32 +140,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
 
     .filter-icon {
         font-size: 14px;
-    }
-
-    .download-btn-pill {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: linear-gradient(135deg, #28a745, #218838);
-        color: white;
-        border: none;
-        padding: 13px 25px;
-        border-radius: 25px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
-    }
-
-    .download-btn-pill:hover {
-        background: linear-gradient(135deg, #218838, #1e7e34);
-        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
-        transform: translateY(-1px);
-    }
-
-    .download-btn-pill:active {
-        transform: translateY(0);
     }
 </style>
 </head>
@@ -340,7 +308,6 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     <?php include 'model/footer.php'; ?>
 
     <script src="js/employeeInfo.js"></script>
-    <script src="js/contract.js"></script>
     <script>
     // ===== LOGOUT CONFIRMATION =====
     document.querySelector('.logout-link').addEventListener('click', (e) => {
@@ -391,7 +358,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
                 const contract = '<?php echo $contractFilter; ?>';
                 
                 // Build export URL with filters
-                let exportUrl = 'exportContractToExcel.php';
+                let exportUrl = 'excel/exportContractToExcel.php';
                 let hasParams = false;
                 
                 if (month != '0' || contract) {

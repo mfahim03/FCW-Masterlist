@@ -15,13 +15,13 @@ if ($years < 1 || $years > 10) {
 }
 
 if ($id) {
-    $sql = "UPDATE [FCW_List].[dbo].[Employee] 
+    $sql = "UPDATE [Updated_FCW_List].[dbo].[Employee] 
             SET [Passport Expiry Date] = DATEADD(YEAR, ?, [Passport Expiry Date]),
                 [Passport Renewed Status] = 1
             WHERE [Employee#] = ?";
     
     $params = array($years, $id);
-    $stmt = sqlsrv_query($conn1, $sql, $params);
+    $stmt = sqlsrv_query($conn2, $sql, $params);
     
     if ($stmt) {
         echo "success";

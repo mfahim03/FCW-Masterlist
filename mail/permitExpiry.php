@@ -33,7 +33,7 @@ function sendPermitExpiryAlert($employeesExpiringSoon) {
 
     // Recipients
     $mail->setFrom('bizalert.Noreply@my.alps.com', 'FCW Work Permit Expiry Alert');
-    $mail->addAddress('fahim.mfza@outlook.com', '');
+    $mail->addAddress('', '');
     // Add more recipients if needed
     // $mail->addAddress('hr@my.alps.com', 'HR Manager');
     // $mail->addCC('email@.com', 'position');

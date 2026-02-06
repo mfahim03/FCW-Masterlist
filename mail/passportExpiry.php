@@ -33,7 +33,7 @@ function sendPassportExpiryAlert($employeesExpiringSoon) {
 
     // Recipients
     $mail->setFrom('bizalert.Noreply@my.alps.com', 'FCW Passport Expiry Alert');
-    $mail->addAddress('fahim.mfza@outlook.com', '');
+    $mail->addAddress('norhana.ujang@my.alps.com', '');
     // Add more recipients if needed
     // $mail->addAddress('hr@my.alps.com', 'HR Manager');
     // $mail->addCC('email@.com', 'position');

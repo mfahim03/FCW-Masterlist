@@ -1,0 +1,478 @@
+.search-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(to right, rgba(44, 62, 80, 0.7), rgba(55, 7, 77, 0.7), rgba(44, 62, 80, 0.7));
+    padding: 8px 15px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+    flex: 1;
+    max-width: 400px;
+}
+
+.search-container i {
+    color: white;
+}
+
+.search-container input {
+    flex: 1;
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #2c3e50;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.search-container input:focus {
+    outline: none;
+    background-color: white;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.4);
+}
+
+.filters-container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin: 10px;
+    gap: 10px;
+    width: calc(100% - 20px);
+    flex-wrap: wrap;
+}
+
+.filter-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(to right, rgba(44, 62, 80, 0.7), rgba(55, 7, 77, 0.7), rgba(44, 62, 80, 0.7));
+    padding: 8px 15px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+    color: white;
+    font-weight: 600;
+}
+
+.filter-pill label {
+    color: white;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.select-wrapper {
+    position: relative;
+    display: inline-block;
+    min-width: 140px;
+}
+
+.filter-pill select {
+    width: 100%;
+    padding: 6px 30px 6px 12px;
+    border-radius: 15px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #2c3e50;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    appearance: none;
+}
+
+.dropdown-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #2c3e50;
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.filter-pill select:focus {
+    outline: none;
+    background-color: white;
+    box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.4);
+}
+
+.pill-toggle-container {
+    display: flex;
+    gap: 5px;
+    background: linear-gradient(to right, rgba(44, 62, 80, 0.7), rgba(55, 7, 77, 0.7), rgba(44, 62, 80, 0.7));
+    padding: 5px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+}
+
+.pill-btn {
+    padding: 8px 20px;
+    background: transparent;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.pill-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.pill-btn.active {
+    background: linear-gradient(135deg, #28a745, #218838);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
+}
+
+.download-btn-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #28a745, #218838);
+    color: white;
+    border: none;
+    padding: 13px 25px;
+    border-radius: 25px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.download-btn-pill:hover {
+    background: linear-gradient(135deg, #218838, #1e7e34);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+    transform: translateY(-1px);
+}
+
+.status-eoc {
+    background: #dc3545;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-runaway {
+    background: #fd7e14;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.view-detail-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #222499, #764ba2);
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.view-detail-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Flight Date Column Styles */
+
+.flight-date-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flight-date-text {
+    flex: 1;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.flight-date-text.empty {
+    color: #999;
+    font-style: italic;
+}
+
+.edit-flight-date-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #17a2b8, #138496);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+}
+
+.edit-flight-date-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(23, 162, 184, 0.4);
+}
+
+.flight-date-edit-form {
+    display: none;
+    gap: 5px;
+    align-items: center;
+    justify-content: center;
+}
+
+.flight-date-edit-form.active {
+    display: flex;
+}
+
+.flight-date-input {
+    padding: 6px 8px;
+    border: 2px solid #17a2b8;
+    border-radius: 6px;
+    font-size: 13px;
+    width: 140px;
+    color: #2c3e50;
+}
+
+.flight-date-input:focus {
+    outline: none;
+    border-color: #138496;
+    box-shadow: 0 0 0 3px rgba(23, 162, 184, 0.1);
+}
+
+.save-flight-date-btn, .cancel-flight-date-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+}
+
+.save-flight-date-btn {
+    background: linear-gradient(135deg, #28a745, #218838);
+}
+
+.save-flight-date-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.4);
+}
+
+.cancel-flight-date-btn {
+    background: linear-gradient(135deg, #6c757d, #5a6268);
+}
+
+.cancel-flight-date-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(108, 117, 125, 0.4);
+}
+
+/* Remarks with file upload */
+.remarks-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+}
+
+.remarks-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.upload-remarks-btn, .view-remarks-pdf-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.upload-remarks-btn {
+    background: linear-gradient(135deg, #fd7e14, #e8590c);
+}
+
+.upload-remarks-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(253, 126, 20, 0.4);
+}
+
+.view-remarks-pdf-btn {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+}
+
+.view-remarks-pdf-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.4);
+}
+
+/* Modal for PDF upload */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+}
+
+.modal.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 20px;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: #f8f9fa;
+    color: #2c3e50;
+}
+
+.upload-section {
+    margin-bottom: 20px;
+}
+
+.upload-section label {
+    display: block;
+    margin-bottom: 10px;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.file-input-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+}
+
+.file-input-wrapper input[type="file"] {
+    position: absolute;
+    left: -9999px;
+}
+
+.file-input-label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 15px;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border: 2px dashed #ced4da;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.file-input-label:hover {
+    background: linear-gradient(135deg, #e9ecef, #dee2e6);
+    border-color: #adb5bd;
+}
+
+.file-input-label.has-file {
+    background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+    border-color: #17a2b8;
+    color: #0c5460;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.modal-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-btn-primary {
+    background: linear-gradient(135deg, #28a745, #218838);
+    color: white;
+}
+
+.modal-btn-primary:hover {
+    background: linear-gradient(135deg, #218838, #1e7e34);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.modal-btn-secondary {
+    background: linear-gradient(135deg, #6c757d, #5a6268);
+    color: white;
+}
+
+.modal-btn-secondary:hover {
+    background: linear-gradient(135deg, #5a6268, #4e555b);
+}

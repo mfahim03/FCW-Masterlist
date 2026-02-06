@@ -54,11 +54,11 @@ if ($statusFilter !== 'default') {
 // Count total records
 $count_sql = "
     SELECT COUNT(*) as total 
-    FROM [FCW_List].[dbo].[Employee] AS e
-    LEFT JOIN [FCW_List].[dbo].[Department] AS d ON e.[DepartmentID] = d.[DepartmentID]
+    FROM [Updated_FCW_List].[dbo].[Employee] AS e
+    LEFT JOIN [Updated_FCW_List].[dbo].[Department] AS d ON e.[DepartmentID] = d.[DepartmentID]
     $whereConditions
 ";
-$count_stmt = sqlsrv_query($conn1, $count_sql);
+$count_stmt = sqlsrv_query($conn2, $count_sql);
 $count_row = sqlsrv_fetch_array($count_stmt, SQLSRV_FETCH_ASSOC);
 $total_records = $count_row['total'];
 $total_pages = ceil($total_records / $records_per_page);
@@ -76,10 +76,10 @@ $sql = "
         e.[Remarks],
         n.[Nationality],
         e.[Birthdate]
-    FROM [FCW_List].[dbo].[Employee] AS e
-    LEFT JOIN [FCW_List].[dbo].[Nationality] AS n
+    FROM [Updated_FCW_List].[dbo].[Employee] AS e
+    LEFT JOIN [Updated_FCW_List].[dbo].[Nationality] AS n
         ON e.[NationalityID] = n.[NationalityID]
-    LEFT JOIN [FCW_List].[dbo].[Department] AS d
+    LEFT JOIN [Updated_FCW_List].[dbo].[Department] AS d
         ON e.[DepartmentID] = d.[DepartmentID]
     $whereConditions
     ORDER BY e.[Work Permit Expiry (New)]
@@ -87,7 +87,7 @@ $sql = "
     FETCH NEXT $records_per_page ROWS ONLY;
 ";
 
-$stmt = sqlsrv_query($conn1, $sql);
+$stmt = sqlsrv_query($conn2, $sql);
 
 if ($stmt === false) {
     die(print_r(sqlsrv_errors(), true));
@@ -96,12 +96,12 @@ if ($stmt === false) {
 // Get all distinct departments for the dropdown
 $department_sql = "
     SELECT DISTINCT d.[Department]
-    FROM [FCW_List].[dbo].[Department] AS d
-    INNER JOIN [FCW_List].[dbo].[Employee] AS e ON e.[DepartmentID] = d.[DepartmentID]
+    FROM [Updated_FCW_List].[dbo].[Department] AS d
+    INNER JOIN [Updated_FCW_List].[dbo].[Employee] AS e ON e.[DepartmentID] = d.[DepartmentID]
     WHERE d.[Department] IS NOT NULL
     ORDER BY d.[Department] ASC
 ";
-$department_stmt = sqlsrv_query($conn1, $department_sql);
+$department_stmt = sqlsrv_query($conn2, $department_sql);
 $departments = [];
 if ($department_stmt) {
     while ($dept_row = sqlsrv_fetch_array($department_stmt, SQLSRV_FETCH_ASSOC)) {

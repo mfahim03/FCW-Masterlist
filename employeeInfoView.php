@@ -2,11 +2,6 @@
 include 'db.php';
 include 'config/fetchEmployee.php';
 session_start();
-
-if (!isset($_SESSION['username'])) {
-    header("Location: login.php");
-    exit;
-}
 ?>
 
 <!DOCTYPE html>
@@ -14,7 +9,8 @@ if (!isset($_SESSION['username'])) {
 <head>
     <title>Foreign Contract Worker</title>
     <link rel="stylesheet" href="css/index.css">
-    <link rel="icon" type="image/png" href="img/fcw2.png">
+    <link rel="stylesheet" href="css/login1.css">
+    <link rel="icon" type="image/png" href="img/logo1.png">
     <link rel="stylesheet" href="css/employee.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
@@ -73,13 +69,15 @@ if (!isset($_SESSION['username'])) {
     <?php endif; ?>
 
     <div class="header">
-        <a href="#" class="logout-link">
-            <i class="fa-solid fa-right-from-bracket" style="font-size: medium;"></i>
-        </a>
         <p>FCW Employee Masterlist</p>
+        <a href="#" class="login-btn" id="openLoginModal">
+            <i class="fa-solid fa-user-lock"></i>
+            Admin Login
+        </a>
     </div>
 
-    <?php include 'model/userNavBar.php'; ?>
+    <?php include 'model/navigationBar.php'; ?>
+    <?php include 'model/loginModal.php'; ?>
 
     <div class="content-wrapper">
         <div class="employee-info-container">
@@ -421,5 +419,6 @@ if (!isset($_SESSION['username'])) {
         }
     });
     </script>
+    <script src="js/login.js"></script>
 </body>
 </html>

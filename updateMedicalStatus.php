@@ -2,8 +2,8 @@
 include 'db.php';
 session_start();
 
-if (!isset($_SESSION['username'])) {
-    echo "unauthorized";
+if (!isset($_SESSION['username']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header("Location: indexView.php");
     exit;
 }
 
@@ -26,18 +26,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Store the actual date when Complete, or 'Incomplete' string when Incomplete
         if ($status === 'Complete') {
             $currentDate = date('Y-m-d');
-            $sql = "UPDATE [FCW_List].[dbo].[Employee] 
+            $sql = "UPDATE [Updated_FCW_List].[dbo].[Employee] 
                     SET [MedicalDate] = ? 
                     WHERE [Employee#] = ?";
             $params = array($currentDate, $employeeNo);
         } else {
-            $sql = "UPDATE [FCW_List].[dbo].[Employee] 
+            $sql = "UPDATE [Updated_FCW_List].[dbo].[Employee] 
                     SET [MedicalDate] = ? 
                     WHERE [Employee#] = ?";
             $params = array('Incomplete', $employeeNo);
         }
 
-        $stmt = sqlsrv_prepare($conn1, $sql, $params);
+        $stmt = sqlsrv_prepare($conn2, $sql, $params);
         
         if ($stmt === false) {
             echo "prepare_failed: " . print_r(sqlsrv_errors(), true);

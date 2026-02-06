@@ -4,69 +4,104 @@ include 'config/fetchPassport.php';
 include 'mail/passportExpiry.php';
 session_start();
 
-if (!isset($_SESSION['username'])) {
-    header("Location: login.php");
+if (!isset($_SESSION['username']) || !isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
+    header("Location: indexView.php");
     exit;
 }
 
-if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    // If not admin, redirect to user view
-    header("Location: passportView.php");
-    exit;
-}
-
-// === CHECK FOR EXPIRING PASSPORTS AND SEND ALERT (WEEKLY // DAILY) ===
-$lastAlertFile = 'mail/last_alert.txt';
+// === CHECK FOR EXPIRING PASSPORTS AND SEND ALERT (DATABASE VERSION) ===
 $sendAlert = false;
 
-if (file_exists($lastAlertFile)) {
-    $lastAlert = file_get_contents($lastAlertFile);
-    $lastAlertTime = strtotime($lastAlert);
-    $weekAgo = strtotime('-7 days'); //CAN CHANGE NUMBER OF DAYS HERE
+// Check when we last sent an alert
+$checkQuery = "
+    SELECT TOP 1 SentAt 
+    FROM EmailAlertLog 
+    WHERE AlertType = 'PassportExpiry' 
+    ORDER BY SentAt DESC
+";
 
-    /* 
-    // Options:
-    $oneDayAgo = strtotime('-1 days');
-    $sixHoursAgo = strtotime('-6 hours');      // Every 6 hours
-    $twelvehHoursAgo = strtotime('-12 hours'); // Twice daily
-    $threeDaysAgo = strtotime('-3 days');      // Every 3 days
-    $weekAgo = strtotime('-7 days');           // Weekly
-    $twoWeeksAgo = strtotime('-14 days');      // Bi-weekly
-    $monthAgo = strtotime('-30 days');         // Monthly
-    $quarterAgo = strtotime('-90 days');       // Quarterly
-    */
+$checkStmt = sqlsrv_query($conn2, $checkQuery);
+
+if ($checkStmt === false) {
+    // Table doesn't exist - create it
+    error_log("EmailAlertLog table might not exist. Creating it...");
     
-    if ($lastAlertTime < $weekAgo) { // CHANGE NAME HERE ALSO
+    $createTableSQL = "
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='EmailAlertLog' AND xtype='U')
+        CREATE TABLE EmailAlertLog (
+            ID INT IDENTITY(1,1) PRIMARY KEY,
+            AlertType VARCHAR(50) NOT NULL,
+            SentAt DATETIME NOT NULL DEFAULT GETDATE(),
+            EmailCount INT NOT NULL
+        )
+    ";
+    
+    $createResult = sqlsrv_query($conn2, $createTableSQL);
+    if ($createResult) {
+        error_log("✓ EmailAlertLog table created");
         $sendAlert = true;
+    } else {
+        error_log("✗ Failed to create EmailAlertLog table: " . print_r(sqlsrv_errors(), true));
+        $sendAlert = false;
     }
 } else {
-    $sendAlert = true;
+    $lastAlertRow = sqlsrv_fetch_array($checkStmt, SQLSRV_FETCH_ASSOC);
+    
+    if ($lastAlertRow) {
+        $lastAlertTime = $lastAlertRow['SentAt'];
+        
+        if ($lastAlertTime instanceof DateTime) {
+            $now = new DateTime();
+            $interval = $now->diff($lastAlertTime);
+            
+            $daysSinceLastAlert = $interval->days;
+            
+            error_log("Last passport alert sent: " . $lastAlertTime->format('Y-m-d H:i:s'));
+            error_log("Days since last alert: $daysSinceLastAlert");
+            
+            // Send if more than 7 days have passed
+            if ($daysSinceLastAlert >= 14) {
+                $sendAlert = true;
+                error_log("Will send passport alert - 7+ days have passed");
+            } else {
+                error_log("Skipping passport alert - only $daysSinceLastAlert days since last alert");
+            }
+        }
+    } else {
+        $sendAlert = true;
+        error_log("No previous passport alerts found - will send first alert");
+    }
+    
+    sqlsrv_free_stmt($checkStmt);
 }
 
 if ($sendAlert) {
-     // Query for employees with passports expiring within 1 year
-    $alertQuery = "
-    SELECT 
-        e.[Employee#],
-        e.[Permit Name],
-        d.[Department],
-        e.[DepartmentID],
-        n.[Nationality],
-        COALESCE(e.[Old Passport], e.[New Passport]) AS [Passport Number],
-        e.[Passport Expiry Date],
-        e.[Passport Renewed Status]
-    FROM [FCW_List].[dbo].[Employee] AS e
-    LEFT JOIN [FCW_List].[dbo].[Nationality] AS n
-        ON e.[NationalityID] = n.[NationalityID]
-    LEFT JOIN [FCW_List].[dbo].[Department] AS d
-        ON e.[DepartmentID] = d.[DepartmentID]
-    WHERE e.[Passport Expiry Date] IS NOT NULL
-        AND e.[Passport Expiry Date] <= DATEADD(YEAR, 1, GETDATE())
-        AND (e.[Passport Renewed Status] IS NULL OR e.[Passport Renewed Status] != 1)
-    ORDER BY e.[Passport Expiry Date] ASC
-";
+    error_log("=== PREPARING TO SEND PASSPORT EXPIRY ALERT ===");
     
-    $alertStmt = sqlsrv_query($conn1, $alertQuery);
+    // Query for employees with passports expiring within 1 year
+    $alertQuery = "
+        SELECT 
+            e.[Employee#],
+            e.[Permit Name],
+            d.[Department],
+            e.[DepartmentID],
+            n.[Nationality],
+            COALESCE(e.[Old Passport], e.[New Passport]) AS [Passport Number],
+            e.[Work Permit Expiry (NEW)],
+            e.[Passport Expiry Date],
+            e.[Passport Renewed Status]
+        FROM [Updated_FCW_List].[dbo].[Employee] AS e
+        LEFT JOIN [Updated_FCW_List].[dbo].[Nationality] AS n
+            ON e.[NationalityID] = n.[NationalityID]
+        LEFT JOIN [Updated_FCW_List].[dbo].[Department] AS d
+            ON e.[DepartmentID] = d.[DepartmentID]
+        WHERE e.[Passport Expiry Date] IS NOT NULL
+            AND e.[Passport Expiry Date] <= DATEADD(YEAR, 1, GETDATE())
+            AND (e.[Passport Renewed Status] IS NULL OR e.[Passport Renewed Status] != 1)
+        ORDER BY e.[Passport Expiry Date] ASC
+    ";
+    
+    $alertStmt = sqlsrv_query($conn2, $alertQuery);
     $employeesExpiringSoon = [];
     
     if ($alertStmt) {
@@ -98,10 +133,31 @@ if ($sendAlert) {
     }
     
     if (!empty($employeesExpiringSoon)) {
+        error_log("Found " . count($employeesExpiringSoon) . " passports expiring soon");
+        
         if (sendPassportExpiryAlert($employeesExpiringSoon)) {
-            file_put_contents($lastAlertFile, date('Y-m-d H:i:s'));
+            // ✓ EMAIL SENT - LOG TO DATABASE
+            $insertQuery = "
+                INSERT INTO EmailAlertLog (AlertType, SentAt, EmailCount) 
+                VALUES ('PassportExpiry', GETDATE(), ?)
+            ";
+            
+            $params = [count($employeesExpiringSoon)];
+            $insertStmt = sqlsrv_query($conn2, $insertQuery, $params);
+            
+            if ($insertStmt) {
+                error_log("✓ Passport email sent successfully and logged to database");
+            } else {
+                error_log("✗ Passport email sent but failed to log to database: " . print_r(sqlsrv_errors(), true));
+            }
+        } else {
+            error_log("✗ Failed to send passport email");
         }
+    } else {
+        error_log("No passports expiring within 1 year");
     }
+} else {
+    error_log("Passport email alert skipped - not enough time since last alert");
 }
 ?>
 
@@ -209,32 +265,6 @@ if ($sendAlert) {
         .filter-icon {
             font-size: 14px;
         }
-
-        .download-btn-pill {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: linear-gradient(135deg, #28a745, #218838);
-            color: white;
-            border: none;
-            padding: 13px 25px;
-            border-radius: 25px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
-        }
-
-        .download-btn-pill:hover {
-            background: linear-gradient(135deg, #218838, #1e7e34);
-            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
-            transform: translateY(-1px);
-        }
-
-        .download-btn-pill:active {
-            transform: translateY(0);
-        }
     </style>
 </head>
 <body style="background-image: url('img/bck.png'); background-size: cover;">
@@ -309,8 +339,9 @@ if ($sendAlert) {
                     <th>Nationality</th>
                     <th>Old Passport</th>
                     <th>New Passport</th>
+                    <th>Work Permit Expiry Date</th>
                     <th>Passport Expiry Date</th>
-                    <th>Status</th>
+                    <th>Passport Status</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -319,6 +350,25 @@ if ($sendAlert) {
                 $hasData = false;
                 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                     $hasData = true;
+
+                    // === Work Permit Expiry ===
+                    $workPermitExpiry = $row['Work Permit Expiry (NEW)'];
+                    $workPermitClass = '';
+                    $workPermitFormatted = 'N/A';
+                    
+                    if ($workPermitExpiry instanceof DateTime) {
+                        $today = new DateTime();
+                        $interval = $today->diff($workPermitExpiry);
+                        
+                        if ($workPermitExpiry < $today) {
+                            $workPermitClass = 'status-expired';
+                        } elseif ($interval->days <= 90) {
+                            $workPermitClass = 'status-expiring-soon';
+                        } else {
+                            $workPermitClass = 'status-active';
+                        }
+                        $workPermitFormatted = $workPermitExpiry->format('d-m-Y');
+                    }
 
                     // === Passport Expiry ===
                     $expiryDate = $row['Passport Expiry Date'];
@@ -331,11 +381,11 @@ if ($sendAlert) {
                         $interval = $today->diff($expiryDate);
                         
                         if ($expiryDate < $today) {
-                            $expiryClass = 'expired';
+                            $expiryClass = 'status-expired';
                             $status = 'Expired';
                             $statusClass = 'status-expired';
                         } elseif ($interval->days <= 365) {
-                            $expiryClass = 'expiring-soon';
+                            $expiryClass = 'status-expiring-soon';
                             $status = 'Expiring Soon';
                             $statusClass = 'status-expiring-soon';
                         } else {
@@ -355,6 +405,7 @@ if ($sendAlert) {
                     echo "<td>" . htmlspecialchars($row['Nationality'] ?? 'N/A') . "</td>";
                     echo "<td>" . htmlspecialchars($row['Old Passport'] ?? 'N/A') . "</td>";
                     echo "<td>" . htmlspecialchars($row['New Passport'] ?? 'N/A') . "</td>";
+                    echo "<td class='$workPermitClass'>" . htmlspecialchars($workPermitFormatted) . "</td>";
                     echo "<td class='$expiryClass'>" . htmlspecialchars($expiryDateFormatted) . "</td>";
                     echo "<td class='$statusClass'>" . htmlspecialchars($status) . "</td>";
                     echo "<td><button class='renew-btn' data-id='" . htmlspecialchars($row['Employee#']) . "'>Renew</button></td>";
@@ -362,7 +413,7 @@ if ($sendAlert) {
                 }
 
                 if (!$hasData) {
-                    echo "<tr><td colspan='9' class='no-data'>No employee records found.</td></tr>";
+                    echo "<tr><td colspan='10' class='no-data'>No employee records found.</td></tr>";
                 }
                 ?>
             </tbody>
@@ -449,7 +500,7 @@ if ($sendAlert) {
             const nationality = document.getElementById('nationalityFilter').value;
             
             // Build export URL with filters
-            let exportUrl = 'exportPassportToExcel.php';
+            let exportUrl = 'excel/exportPassportToExcel.php';
             let hasParams = false;
             
             if (month != '0' || nationality != 'all') {
@@ -489,47 +540,47 @@ if ($sendAlert) {
         });
     }
 
-// ===== RENEW BUTTON FUNCTION WITH YEAR INPUT =====
-document.querySelectorAll('.renew-btn').forEach(button => {
-    button.addEventListener('click', () => {
-        const id = button.getAttribute('data-id');
-        
-        // Prompt user for number of years
-        const years = prompt("Enter number of years to renew passport:", "5");
-        
-        // Validate input
-        if (years === null) {
-            return; // User cancelled
-        }
-        
-        const yearsInt = parseInt(years);
-        if (isNaN(yearsInt) || yearsInt < 1 || yearsInt > 10) {
-            alert("Please enter a valid number between 1 and 10 years.");
-            return;
-        }
-        
-        if (confirm(`Renew this passport for ${yearsInt} year(s)?`)) {
-            fetch('renewPassport.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'id=' + encodeURIComponent(id) + '&years=' + yearsInt
-            })
-            .then(response => response.text())
-            .then(result => {
-                if (result.trim() === "success") {
-                    alert(`Passport renewed successfully for ${yearsInt} year(s)!`);
-                    location.reload();
-                } else {
-                    alert("Failed to renew passport.");
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert("An error occurred while renewing.");
-            });
-        }
+    // ===== RENEW BUTTON FUNCTION WITH YEAR INPUT =====
+    document.querySelectorAll('.renew-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const id = button.getAttribute('data-id');
+            
+            // Prompt user for number of years
+            const years = prompt("Enter number of years to renew passport:", "5");
+            
+            // Validate input
+            if (years === null) {
+                return; // User cancelled
+            }
+            
+            const yearsInt = parseInt(years);
+            if (isNaN(yearsInt) || yearsInt < 1 || yearsInt > 10) {
+                alert("Please enter a valid number between 1 and 10 years.");
+                return;
+            }
+            
+            if (confirm(`Renew this passport for ${yearsInt} year(s)?`)) {
+                fetch('renewPassport.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'id=' + encodeURIComponent(id) + '&years=' + yearsInt
+                })
+                .then(response => response.text())
+                .then(result => {
+                    if (result.trim() === "success") {
+                        alert(`Passport renewed successfully for ${yearsInt} year(s)!`);
+                        location.reload();
+                    } else {
+                        alert("Failed to renew passport.");
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("An error occurred while renewing.");
+                });
+            }
+        });
     });
-});
     </script>
 </body>
 </html>

@@ -2,11 +2,6 @@
 include 'db.php';
 include 'config/fetchPassport.php';
 session_start();
-
-if (!isset($_SESSION['username'])) {
-    header("Location: login.php");
-    exit;
-}
 ?>
 
 <!DOCTYPE html>
@@ -14,7 +9,8 @@ if (!isset($_SESSION['username'])) {
 <head>
     <title>Foreign Contract Worker</title>
     <link rel="stylesheet" href="css/index.css">
-    <link rel="icon" type="image/png" href="img/fcw2.png">
+    <link rel="stylesheet" href="css/login1.css">
+    <link rel="icon" type="image/png" href="img/logo1.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         .status-completed {
@@ -117,13 +113,15 @@ if (!isset($_SESSION['username'])) {
 </head>
 <body style="background-image: url('img/bck.png'); background-size: cover;">
     <div class="header">
-        <a href="#" class="logout-link">
-            <i class="fa-solid fa-right-from-bracket" style="font-size: medium;"></i>
+        <p>FCW Passport Masterlist</p> <!-- Or your page-specific title -->
+        <a href="#" class="login-btn" id="openLoginModal">
+            <i class="fa-solid fa-user-lock"></i>
+            Admin Login
         </a>
-        <p>FCW Passport Masterlist</p>
     </div>
 
-    <?php include 'model/userNavBar.php'; ?>
+    <?php include 'model/navigationBar.php'; ?>
+    <?php include 'model/loginModal.php'; ?>
 
     <div class="content-wrapper">
         <div class="filters-container">
@@ -170,6 +168,12 @@ if (!isset($_SESSION['username'])) {
                     <i class="fa-solid fa-chevron-down dropdown-arrow"></i>
                 </div>
             </div>
+
+            <!-- Download Button -->
+            <button class="download-btn-pill">
+                <i class="fa-regular fa-file-excel"></i>
+                Download Excel
+            </button>
         </div>
 
         <table>
@@ -181,8 +185,9 @@ if (!isset($_SESSION['username'])) {
                     <th>Nationality</th>
                     <th>Old Passport</th>
                     <th>New Passport</th>
+                    <th>Work Permit Expiry Date</th>
                     <th>Passport Expiry Date</th>
-                    <th>Status</th>
+                    <th>Passport Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -190,6 +195,25 @@ if (!isset($_SESSION['username'])) {
                 $hasData = false;
                 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
                     $hasData = true;
+
+                    // === Work Permit Expiry ===
+                    $workPermitExpiry = $row['Work Permit Expiry (NEW)'];
+                    $workPermitClass = '';
+                    $workPermitFormatted = 'N/A';
+                    
+                    if ($workPermitExpiry instanceof DateTime) {
+                        $today = new DateTime();
+                        $interval = $today->diff($workPermitExpiry);
+                        
+                        if ($workPermitExpiry < $today) {
+                            $workPermitClass = 'status-expired';
+                        } elseif ($interval->days <= 90) {
+                            $workPermitClass = 'status-expiring-soon';
+                        } else {
+                            $workPermitClass = 'status-active';
+                        }
+                        $workPermitFormatted = $workPermitExpiry->format('d-m-Y');
+                    }
 
                     // === Passport Expiry ===
                     $expiryDate = $row['Passport Expiry Date'];
@@ -202,11 +226,11 @@ if (!isset($_SESSION['username'])) {
                         $interval = $today->diff($expiryDate);
                         
                         if ($expiryDate < $today) {
-                            $expiryClass = 'expired';
+                            $expiryClass = 'status-expired';
                             $status = 'Expired';
                             $statusClass = 'status-expired';
                         } elseif ($interval->days <= 365) {
-                            $expiryClass = 'expiring-soon';
+                            $expiryClass = 'status-expiring-soon';
                             $status = 'Expiring Soon';
                             $statusClass = 'status-expiring-soon';
                         } else {
@@ -226,6 +250,7 @@ if (!isset($_SESSION['username'])) {
                     echo "<td>" . htmlspecialchars($row['Nationality'] ?? 'N/A') . "</td>";
                     echo "<td>" . htmlspecialchars($row['Old Passport'] ?? 'N/A') . "</td>";
                     echo "<td>" . htmlspecialchars($row['New Passport'] ?? 'N/A') . "</td>";
+                    echo "<td class='$workPermitClass'>" . htmlspecialchars($workPermitFormatted) . "</td>";
                     echo "<td class='$expiryClass'>" . htmlspecialchars($expiryDateFormatted) . "</td>";
                     echo "<td class='$statusClass'>" . htmlspecialchars($status) . "</td>";
                     echo "</tr>";
@@ -285,14 +310,6 @@ if (!isset($_SESSION['username'])) {
 
     <script src="js/employeeInfo.js"></script>
     <script>
-    // ===== LOGOUT CONFIRMATION =====
-    document.querySelector('.logout-link').addEventListener('click', (e) => {
-        e.preventDefault();
-        if (confirm("Are you sure you want to log out?")) {
-            window.location.href = "logout.php";
-        }
-    });
-
     // ===== FILTER FUNCTION =====
     function applyFilters() {
         const month = document.getElementById('monthFilter').value;
@@ -309,6 +326,56 @@ if (!isset($_SESSION['username'])) {
         
         window.location.href = url;
     }
+
+    // ===== EXPORT TO EXCEL FUNCTIONALITY =====
+    const downloadBtn = document.querySelector('.download-btn-pill');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', function() {
+            // Get current filter values
+            const month = document.getElementById('monthFilter').value;
+            const nationality = document.getElementById('nationalityFilter').value;
+            
+            // Build export URL with filters
+            let exportUrl = 'excel/exportPassportToExcel.php';
+            let hasParams = false;
+            
+            if (month != '0' || nationality != 'all') {
+                exportUrl += '?';
+                if (month != '0') {
+                    exportUrl += 'month=' + month;
+                    hasParams = true;
+                }
+                if (nationality != 'all') {
+                    if (hasParams) exportUrl += '&';
+                    exportUrl += 'nationality=' + encodeURIComponent(nationality);
+                }
+            }
+            
+            // Show loading state
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+            this.disabled = true;
+            
+            // Create invisible iframe to trigger download without leaving page
+            const iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = exportUrl;
+            document.body.appendChild(iframe);
+            
+            // Reset button after a delay
+            setTimeout(() => {
+                this.innerHTML = originalText;
+                this.disabled = false;
+                // Clean up iframe
+                setTimeout(() => {
+                    if (iframe.parentNode) {
+                        iframe.parentNode.removeChild(iframe);
+                    }
+                }, 1000);
+            }, 1000);
+        });
+    }
     </script>
+    <script src="js/login.js"></script>
 </body>
 </html>

@@ -2,11 +2,6 @@
 include 'db.php';
 include 'config/fetchContract.php';
 session_start();
-
-if (!isset($_SESSION['username'])) {
-    header("Location: login.php");
-    exit;
-}
 ?>
 
 <!DOCTYPE html>
@@ -14,7 +9,8 @@ if (!isset($_SESSION['username'])) {
 <head>
     <title>Foreign Contract Worker</title>
     <link rel="stylesheet" href="css/index.css">
-    <link rel="icon" type="image/png" href="img/fcw2.png">
+    <link rel="stylesheet" href="css/login1.css">
+    <link rel="icon" type="image/png" href="img/logo1.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
     .filters-container {
@@ -171,13 +167,15 @@ if (!isset($_SESSION['username'])) {
 </head>
 <body style="background-image: url('img/bck.png'); background-size: cover;">
     <div class="header">
-        <a href="#" class="logout-link">
-            <i class="fa-solid fa-right-from-bracket" style="font-size: medium;"></i>
+        <p>FCW Contract Masterlist</p> <!-- Or your page-specific title -->
+        <a href="#" class="login-btn" id="openLoginModal">
+            <i class="fa-solid fa-user-lock"></i>
+            Admin Login
         </a>
-        <p>FCW Contract Masterlist</p>
     </div>
 
-    <?php include 'model/userNavBar.php'; ?>
+    <?php include 'model/navigationBar.php'; ?>
+    <?php include 'model/loginModal.php'; ?>
 
     <div class="content-wrapper">
         <div class="filters-container">
@@ -214,6 +212,12 @@ if (!isset($_SESSION['username'])) {
                     <i class="fa-solid fa-file-circle-xmark"></i> Not Extend (<?php echo $total_not_extend_records; ?>)
                 </a>
             </div>
+
+            <!-- Download Button -->
+            <button class="download-btn-pill">
+                <i class="fa-regular fa-file-excel"></i>
+                Download Excel
+            </button>
         </div>
 
         <table>
@@ -326,48 +330,89 @@ if (!isset($_SESSION['username'])) {
     <?php include 'model/footer.php'; ?>
 
     <script src="js/employeeInfo.js"></script>
-    <script src="js/contract.js"></script>
     <script>
-    // ===== LOGOUT CONFIRMATION =====
-    document.querySelector('.logout-link').addEventListener('click', (e) => {
-        e.preventDefault();
-        if (confirm("Are you sure you want to log out?")) {
-            window.location.href = "logout.php";
-        }
-    });
-
-    // ===== FILTER FUNCTION =====
-    function filterByMonth() {
-        const month = document.getElementById('monthFilter').value;
-        const contract = '<?php echo $contractFilter; ?>';
-        const page = 1; // Reset to first page when filtering
-        
-        let url = '?';
-        if (contract) {
-            url += 'contract=' + encodeURIComponent(contract) + '&';
-        }
-        if (month != '0') {
-            url += 'month=' + month + '&';
-        }
-        url += 'page=' + page;
-        
-        window.location.href = url;
-    }
-
-    // ===== DROPDOWN ARROW ANIMATION =====
-    document.addEventListener('DOMContentLoaded', function() {
-        const selects = document.querySelectorAll('.month-filter-pill select');
-        
-        selects.forEach(select => {
-            const wrapper = select.closest('.select-wrapper');
+        // ===== FILTER FUNCTION =====
+        function filterByMonth() {
+            const month = document.getElementById('monthFilter').value;
+            const contract = '<?php echo $contractFilter; ?>';
+            const page = 1; // Reset to first page when filtering
             
-            select.addEventListener('focus', () => wrapper?.classList.add('open'));
-            select.addEventListener('blur', () => wrapper?.classList.remove('open'));
-            select.addEventListener('change', () => {
-                setTimeout(() => wrapper?.classList.remove('open'), 300);
+            let url = '?';
+            if (contract) {
+                url += 'contract=' + encodeURIComponent(contract) + '&';
+            }
+            if (month != '0') {
+                url += 'month=' + month + '&';
+            }
+            url += 'page=' + page;
+            
+            window.location.href = url;
+        }
+
+        // ===== DROPDOWN ARROW ANIMATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            const selects = document.querySelectorAll('.month-filter-pill select');
+            
+            selects.forEach(select => {
+                const wrapper = select.closest('.select-wrapper');
+                
+                select.addEventListener('focus', () => wrapper?.classList.add('open'));
+                select.addEventListener('blur', () => wrapper?.classList.remove('open'));
+                select.addEventListener('change', () => {
+                    setTimeout(() => wrapper?.classList.remove('open'), 300);
+                });
             });
+
+            // ===== EXPORT TO EXCEL FUNCTIONALITY (DIRECT DOWNLOAD) =====
+            const downloadBtn = document.querySelector('.download-btn-pill');
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', function() {
+                    // Get current filter values
+                    const month = document.getElementById('monthFilter').value;
+                    const contract = '<?php echo $contractFilter; ?>';
+                    
+                    // Build export URL with filters
+                    let exportUrl = 'excel/exportContractToExcel.php';
+                    let hasParams = false;
+                    
+                    if (month != '0' || contract) {
+                        exportUrl += '?';
+                        if (contract) {
+                            exportUrl += 'contract=' + encodeURIComponent(contract);
+                            hasParams = true;
+                        }
+                        if (month != '0') {
+                            if (hasParams) exportUrl += '&';
+                            exportUrl += 'month=' + month;
+                        }
+                    }
+                    
+                    // Show loading state
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
+                    this.disabled = true;
+                    
+                    // Create invisible iframe to trigger download without leaving page
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    iframe.src = exportUrl;
+                    document.body.appendChild(iframe);
+                    
+                    // Reset button after a delay
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                        // Clean up iframe
+                        setTimeout(() => {
+                            if (iframe.parentNode) {
+                                iframe.parentNode.removeChild(iframe);
+                            }
+                        }, 1000);
+                    }, 1000);
+                });
+            }
         });
-    });
     </script>
+    <script src="js/login.js"></script>
 </body>
 </html>

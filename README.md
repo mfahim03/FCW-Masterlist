@@ -1,10 +1,15 @@
-Internship Project 2 
-
 Foreign Contract Worker Masterlist (Manual Guide)
+
+Website link : http://10.23.6.223:106
 
 1. Login
 	(Admin)
+	- username : aen
+	- password : aen1234
+
 	(User)
+	- username : user
+	- password : user1234
 
 2. Dashboard Page
 	- main dashboard (display count for each category)
@@ -53,12 +58,18 @@ Foreign Contract Worker Masterlist (Manual Guide)
 	- save employee/cancel
 	- scrollable
 
-8. List of dropdowns (addEmployee and employeeInfo) :
+8. EOC & Runaway
+	- live-search functionality
+	- filter by nationality
+	- view by eoc or runaway
+	- can upload & view pdf file from table
+	- can edit flight date from table
+	- can view & update employee detail
+	- download excel
+
+9. List of dropdowns (addEmployee and employeeInfo) :
 	- Gender
 	- Nationality
 	- Department
 	- Contract Type
-
 	- Medical Status
-
-

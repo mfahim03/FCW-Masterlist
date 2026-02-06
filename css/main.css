@@ -13,7 +13,13 @@
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin: 10px;
-  width: calc(100% - 20px);
+}
+
+.dashboard-cards-grid .eoc-runaway-card {
+  grid-column: 1 / -1; /* spans both columns */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 /* ===== DASHBOARD NAVIGATION CARDS ===== */
@@ -64,7 +70,8 @@
 .work-permit-card .card-icon,
 .passport-card .card-icon,
 .contract-card .card-icon,
-.department-card .card-icon {
+.department-card .card-icon,
+.eoc-runaway-card .card-icon {
   color: rgba(18, 80, 143, 0.9);
 }
 
@@ -284,5 +291,51 @@
   
   .dashboard-cards-grid .stat-value {
     font-size: 38px;
+  }
+}
+
+/* ===== EOC/RUNAWAY CARD STYLES ===== */
+
+/* EOC/Runaway Stats */
+.dashboard-cards-grid .card-stat.eoc-stat .stat-value {
+  color: rgba(18, 80, 143, 0.9);
+}
+
+.dashboard-cards-grid .card-stat.runaway-stat .stat-value {
+  color: rgba(18, 80, 143, 0.9);
+}
+
+/* ===== EOC/RUNAWAY SECTION STAT CARDS ===== */
+
+.stat-card.eoc-card {
+  background: linear-gradient(135deg, rgba(211, 47, 47, 0.9), rgba(198, 40, 40, 0.9));
+  color: white;
+}
+
+.stat-card.eoc-card i {
+  color: white;
+  opacity: 0.9;
+}
+
+.stat-card.runaway-card {
+  background: linear-gradient(135deg, rgba(245, 124, 0, 0.9), rgba(230, 110, 0, 0.9));
+  color: white;
+}
+
+.stat-card.runaway-card i {
+  color: white;
+  opacity: 0.9;
+}
+
+.stat-card.eoc-card:hover,
+.stat-card.runaway-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+}
+
+/* ===== EOC SECTION RESPONSIVE ===== */
+
+@media (max-width: 768px) {
+  .eoc-runaway-card .card-stats {
+    gap: 15px;
   }
 }
